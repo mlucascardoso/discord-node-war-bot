@@ -43,10 +43,7 @@ client.on('interactionCreate', async (interaction) => {
         const role = NODE_WAR_CONFIG.roles[roleName];
 
         if (!role) {
-            await interaction.reply({
-                content: '❌ Função não encontrada!',
-                ephemeral: true
-            });
+            await interaction.reply({ content: '❌ Função não encontrada!', ephemeral: true });
             return;
         }
 
@@ -63,10 +60,7 @@ client.on('interactionCreate', async (interaction) => {
         if (userCurrentRole === roleName) {
             role.members = role.members.filter((member) => member !== userName);
 
-            await interaction.reply({
-                content: `❌ Você foi removido da função **${roleName}**!`,
-                ephemeral: true
-            });
+            await interaction.reply({ content: `❌ Você foi removido da função **${roleName}**!`, ephemeral: true });
         } else {
             // Remover de função anterior se existir
             if (userCurrentRole) {
@@ -77,31 +71,20 @@ client.on('interactionCreate', async (interaction) => {
             if (role.members.length < role.max) {
                 role.members.push(userName);
 
-                await interaction.reply({
-                    content: `✅ Você foi inscrito na função **${role.emoji} ${roleName}**!`,
-                    ephemeral: true
-                });
+                await interaction.reply({ content: `✅ Você foi inscrito na função **${role.emoji} ${roleName}**!`, ephemeral: true });
             } else {
                 // Adicionar à waitlist
                 if (!role.waitlist.includes(userName)) {
                     role.waitlist.push(userName);
                 }
 
-                await interaction.reply({
-                    content: `⏳ Função **${roleName}** lotada! Você foi adicionado à waitlist.`,
-                    ephemeral: true
-                });
+                await interaction.reply({ content: `⏳ Função **${roleName}** lotada! Você foi adicionado à waitlist.`, ephemeral: true });
             }
         }
 
-        // Atualizar a mensagem original
         const updatedMessageData = generateNodeWarMessage();
         const updatedButtons = createNodeWarButtons();
-
-        await interaction.message.edit({
-            ...updatedMessageData,
-            components: updatedButtons
-        });
+        await interaction.message.edit({ ...updatedMessageData, components: updatedButtons });
     }
 });
 

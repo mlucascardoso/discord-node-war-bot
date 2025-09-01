@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, GatewayIntentBits } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, EmbedBuilder, GatewayIntentBits } from 'discord.js';
 
 dotenv.config();
 
@@ -13,16 +13,16 @@ const NODE_WAR_CONFIG = {
     tier: 2,
     roles: {
         BOMBER: { emoji: '💥', max: 4, members: [], waitlist: [] },
-        FRONTLINE: { emoji: '⚔️', max: 6, members: [], waitlist: [] },
-        STRIKER: { emoji: '🥊', max: 4, members: [], waitlist: [] },
         RANGED: { emoji: '🏹', max: 4, members: [], waitlist: [] },
-        'DO-SA': { emoji: '🚬', max: 4, members: [], waitlist: [] },
-        SHAI: { emoji: '🥁', max: 4, members: [], waitlist: [] },
         PA: { emoji: '🧙‍♂️', max: 3, members: [], waitlist: [] },
-        BLOCO: { emoji: '🧱', max: 3, members: [], waitlist: [] },
-        CALLER: { emoji: '🎙️', max: 3, members: [], waitlist: [] },
         DEFESA: { emoji: '🔥', max: 3, members: [], waitlist: [] },
+        FRONTLINE: { emoji: '⚔️', max: 6, members: [], waitlist: [] },
+        'DO-SA': { emoji: '🚬', max: 4, members: [], waitlist: [] },
+        BLOCO: { emoji: '🧱', max: 3, members: [], waitlist: [] },
         ELEFANTE: { emoji: '🐘', max: 1, members: [], waitlist: [] },
+        STRIKER: { emoji: '🥊', max: 4, members: [], waitlist: [] },
+        SHAI: { emoji: '🥁', max: 4, members: [], waitlist: [] },
+        CALLER: { emoji: '🎙️', max: 3, members: [], waitlist: [] },
         BANDEIRA: { emoji: '🚩', max: 1, members: [], waitlist: [] }
     }
 };
@@ -55,22 +55,27 @@ function formatDateToPT(date) {
     return `${dayName}, ${day} de ${month} de ${year}`;
 }
 
-// Função para gerar a mensagem da Node War
+// Função para gerar a mensagem da Node War usando Embed
 function generateNodeWarMessage() {
     const nextDate = getNextNodeWarDate();
     const formattedDate = formatDateToPT(nextDate);
 
-    let message = '# NODE WAR\n';
-    message += `🏰 **NODE TIER ${NODE_WAR_CONFIG.tier} — ${NODE_WAR_CONFIG.totalVagas} VAGAS**\n\n`;
-    message += '✅ **CANAIS PARA CONFIRMAR SUA PARTICIPAÇÃO**\n';
-    message += '(Mediah 1 / Valencia 1)\n\n';
-    message += '⏰ O servidor onde acontecerá a guerra será anunciado às 20:45\n';
-    message += '➡️ Todos os membros devem estar presentes no Discord até esse horário.\n';
-    message += '🔁 Atenção: A partir das 20:00 está liberado o roubo de vaga.\n\n';
-    message += '**Time**\n';
-    message += `⏰ **Data/hora da node war:** ${formattedDate} 21:00 - 22:00\n\n`;
+    // Criar embed principal
+    const embed = new EmbedBuilder()
+        .setTitle('NODE WAR')
+        .setDescription(
+            `🏰 **NODE TIER ${NODE_WAR_CONFIG.tier} — ${NODE_WAR_CONFIG.totalVagas} VAGAS**\n\n` +
+                '✅ **CANAIS PARA CONFIRMAR SUA PARTICIPAÇÃO**\n' +
+                '(Mediah 1 / Valencia 1)\n\n' +
+                '⏰ O servidor onde acontecerá a guerra será anunciado às 20:45\n' +
+                '➡️ Todos os membros devem estar presentes no Discord até esse horário.\n' +
+                '🔁 Atenção: A partir das 20:00 está liberado o roubo de vaga.\n\n' +
+                '**Time**\n' +
+                `⏰ **Data/hora da node war:** ${formattedDate} 21:00 - 22:00\n`
+        )
+        .setColor('#ff6b35');
 
-    // Dividir as funções em 3 colunas
+    // Organizar funções em 3 colunas usando campos inline
     const roleKeys = Object.keys(NODE_WAR_CONFIG.roles);
     const columns = [[], [], []];
 
@@ -78,25 +83,41 @@ function generateNodeWarMessage() {
         columns[index % 3].push(role);
     });
 
-    // Gerar as colunas
-    for (let i = 0; i < 3; i++) {
-        columns[i].forEach((roleName) => {
-            const role = NODE_WAR_CONFIG.roles[roleName];
-            const currentCount = role.members.length;
-            const maxCount = role.max;
+    // Adicionar campos para cada função (3 por linha com inline)
+    const maxRows = Math.max(...columns.map((col) => col.length));
 
-            message += `${role.emoji} **${roleName} (${currentCount}/${maxCount})**\n`;
-            message += `🔒@${role.emoji} ${roleName}\n`;
+    for (let row = 0; row < maxRows; row++) {
+        for (let col = 0; col < 3; col++) {
+            if (columns[col][row]) {
+                const roleName = columns[col][row];
+                const role = NODE_WAR_CONFIG.roles[roleName];
+                const currentCount = role.members.length;
+                const maxCount = role.max;
 
-            if (role.members.length > 0) {
-                role.members.forEach((member) => {
-                    message += `👻 ${member}\n`;
+                let fieldValue = `🔒@${role.emoji} ${roleName}\n`;
+
+                if (role.members.length > 0) {
+                    role.members.forEach((member) => {
+                        fieldValue += `👻 ${member}\n`;
+                    });
+                } else {
+                    fieldValue += '-\n';
+                }
+
+                embed.addFields({
+                    name: `${role.emoji} ${roleName} (${currentCount}/${maxCount})`,
+                    value: fieldValue,
+                    inline: true
                 });
             } else {
-                message += '-\n';
+                // Campo vazio para manter alinhamento
+                embed.addFields({
+                    name: '\u200b',
+                    value: '\u200b',
+                    inline: true
+                });
             }
-            message += '\n';
-        });
+        }
     }
 
     // Adicionar waitlist se houver pessoas esperando
@@ -109,13 +130,19 @@ function generateNodeWarMessage() {
     });
 
     if (waitlistMembers.length > 0) {
-        message += '**Waitlist**\n';
+        let waitlistText = '';
         waitlistMembers.forEach((member) => {
-            message += `⏳ ${member}\n`;
+            waitlistText += `⏳ ${member}\n`;
+        });
+
+        embed.addFields({
+            name: '**Waitlist**',
+            value: waitlistText,
+            inline: false
         });
     }
 
-    return message;
+    return { embeds: [embed] };
 }
 
 // Função para criar botões de inscrição
@@ -192,12 +219,12 @@ client.once('ready', async () => {
 
         if (channels.size > 0) {
             const channel = channels.first();
-            const message = generateNodeWarMessage();
+            const messageData = generateNodeWarMessage();
             const buttons = createNodeWarButtons();
 
             try {
                 await channel.send({
-                    content: message,
+                    ...messageData,
                     components: buttons
                 });
                 console.log(`📅 Agenda Node War postada automaticamente no canal: ${channel.name}`);
@@ -242,11 +269,11 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         if (interaction.commandName === 'nodewar') {
-            const message = generateNodeWarMessage();
+            const messageData = generateNodeWarMessage();
             const buttons = createNodeWarButtons();
 
             await interaction.reply({
-                content: message,
+                ...messageData,
                 components: buttons
             });
         }
@@ -311,11 +338,11 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         // Atualizar a mensagem original
-        const updatedMessage = generateNodeWarMessage();
+        const updatedMessageData = generateNodeWarMessage();
         const updatedButtons = createNodeWarButtons();
 
         await interaction.message.edit({
-            content: updatedMessage,
+            ...updatedMessageData,
             components: updatedButtons
         });
     }

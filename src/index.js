@@ -23,7 +23,26 @@ client.once('ready', async () => {
         description: 'Saúda o usuário'
     });
 
-    console.log('Comandos /ping e /saudacao registrados!');
+    await client.application.commands.create({
+        name: 'soma',
+        description: 'Soma dois números inteiros',
+        options: [
+            {
+                name: 'numero1',
+                description: 'Primeiro número',
+                type: 4, // INTEGER
+                required: true
+            },
+            {
+                name: 'numero2',
+                description: 'Segundo número',
+                type: 4, // INTEGER
+                required: true
+            }
+        ]
+    });
+
+    console.log('Comandos /ping, /saudacao e /soma registrados!');
 });
 
 // Evento para responder a mensagens
@@ -46,6 +65,17 @@ client.on('interactionCreate', async (interaction) => {
 
     if (interaction.commandName === 'saudacao') {
         await interaction.reply(`👋 Olá ${interaction.user}!`);
+    }
+
+    if (interaction.commandName === 'soma') {
+        const numero1 = interaction.options.getInteger('numero1');
+        const numero2 = interaction.options.getInteger('numero2');
+        const resultado = numero1 + numero2;
+
+        await interaction.reply({
+            content: `🧮 A soma de ${numero1} + ${numero2} = **${resultado}**`,
+            ephemeral: true // Resposta visível apenas para o usuário que executou o comando
+        });
     }
 });
 

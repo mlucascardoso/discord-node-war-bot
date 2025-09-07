@@ -29,7 +29,7 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
     const [commandsOpen, setCommandsOpen] = useState(true);
 
     const menuItems = [
-        { id: 'welcome', label: 'Boas-vindas', icon: <DashboardIcon />, badge: null },
+        { id: 'welcome', label: 'Dashboard', icon: <DashboardIcon />, badge: null },
         { id: 'members', label: 'Membros', icon: <PeopleIcon />, badge: null },
         {
             id: 'commands',

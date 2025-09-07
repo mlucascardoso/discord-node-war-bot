@@ -15,7 +15,7 @@ import Layout from './components/Layout/Layout';
 import AlertMessage from './components/UI/AlertMessage';
 
 // Page Components
-import WelcomePage from './components/Pages/WelcomePage';
+import DashboardPage from './components/Pages/DashboardPage';
 import BotStatusPage from './components/Pages/BotStatusPage';
 import NodeWarPage from './components/Pages/NodeWarPage';
 import MembersPage from './components/Pages/MembersPage';
@@ -73,7 +73,7 @@ function App() {
     const renderCurrentPage = () => {
         switch (currentPage) {
             case 'welcome':
-                return <WelcomePage />;
+                return <DashboardPage />;
             case 'status':
                 return <BotStatusPage botStatus={botStatus} fetchBotStatus={fetchBotStatus} />;
             case 'nodewar':
@@ -90,7 +90,7 @@ function App() {
             case 'settings':
                 return <SettingsPage />;
             default:
-                return <WelcomePage />;
+                return <DashboardPage />;
         }
     };
 

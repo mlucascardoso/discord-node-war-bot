@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { Client, GatewayIntentBits } from 'discord.js';
 
-import { NODE_WAR_CONFIG, createNodeWarButtons, generateNodeWarMessage } from '../src/commands/node-war.js';
+import { NODE_WAR_CONFIG, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
 
 dotenv.config();
 
@@ -88,25 +88,9 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-let botStarted = false;
-
-async function startBot() {
-    if (!botStarted) {
-        botStarted = true;
-        await client.login(process.env.DISCORD_TOKEN);
-    }
+export async function initializeBot() {
+    await client.login(process.env.DISCORD_TOKEN);
+    return client;
 }
 
-if (process.env.NODE_ENV !== 'production') {
-    startBot();
-}
-
-export default async function handler(req, res) {
-    await startBot();
-
-    res.status(200).json({
-        status: 'Bot is running',
-        timestamp: new Date().toISOString(),
-        botReady: client.isReady()
-    });
-}
+export { client };

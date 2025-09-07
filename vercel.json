@@ -1,27 +1,16 @@
 {
-    "version": 2,
-    "builds": [
+    "buildCommand": "cd frontend && yarn install && yarn build",
+    "outputDirectory": "frontend/dist",
+    "functions": {
+        "backend/api/status.js": { "maxDuration": 30 },
+        "backend/api/channels.js": { "maxDuration": 30 },
+        "backend/api/nodewar.js": { "maxDuration": 30 },
+        "backend/api/index.js": { "maxDuration": 30 }
+    },
+    "rewrites": [
         {
-            "src": "frontend/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "buildCommand": "yarn build",
-                "distDir": "dist"
-            }
-        },
-        {
-            "src": "backend/api/*.js",
-            "use": "@vercel/node"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "dest": "/backend/api/$1"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/frontend/dist/$1"
+            "source": "/api/(.*)",
+            "destination": "/backend/api/$1"
         }
     ]
 }

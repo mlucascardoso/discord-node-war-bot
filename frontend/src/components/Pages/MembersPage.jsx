@@ -176,22 +176,34 @@ const MembersPage = () => {
     };
 
     const handleSaveMember = () => {
+        const ap = parseInt(memberForm.ap) || 0;
+        const awakenedAp = parseInt(memberForm.awakenedAp) || 0;
+        const dp = parseInt(memberForm.dp) || 0;
+
         if (editingMember) {
             // Editar membro existente
+            const updatedMember = {
+                ...memberForm,
+                id: editingMember.id,
+                level: parseInt(memberForm.level) || 1,
+                ap,
+                awakenedAp,
+                dp,
+                gearscore: calculateGearscore(ap, awakenedAp, dp)
+            };
             setMembers(prev => prev.map(member =>
-                member.id === editingMember.id
-                    ? { ...memberForm, id: editingMember.id }
-                    : member
+                member.id === editingMember.id ? updatedMember : member
             ));
         } else {
             // Adicionar novo membro
             const newMember = {
                 ...memberForm,
                 id: Date.now(),
-                level: parseInt(memberForm.level),
-                ap: parseInt(memberForm.ap),
-                awakenedAp: parseInt(memberForm.awakenedAp),
-                dp: parseInt(memberForm.dp)
+                level: parseInt(memberForm.level) || 1,
+                ap,
+                awakenedAp,
+                dp,
+                gearscore: calculateGearscore(ap, awakenedAp, dp)
             };
             setMembers(prev => [...prev, newMember]);
         }
@@ -207,6 +219,7 @@ const MembersPage = () => {
     };
 
     const formatNumber = (num) => {
+        if (num === undefined || num === null || num === '') return '0';
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     };
 

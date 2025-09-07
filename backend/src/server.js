@@ -1,5 +1,9 @@
 import cors from 'cors';
+import dotenv from 'dotenv';
 import express from 'express';
+
+// Load environment variables for local development
+dotenv.config({ path: '.env.local' });
 import { client, initializeBot } from './discord/client.js';
 import { createMember, deleteMember, getAllMembers, getMemberById, getMembersStats, updateMember } from './api/members.js';
 import { createNodeWarButtons, generateNodeWarMessage } from './discord/commands/node-war.js';

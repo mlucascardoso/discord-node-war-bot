@@ -8,15 +8,16 @@ import {
 } from '@mui/material';
 import { Menu as MenuIcon } from '@mui/icons-material';
 
-const Header = ({ currentPageTitle, onDrawerToggle }) => {
+const Header = ({ currentPageTitle, onDrawerToggle, sidebarWidth = 280 }) => {
     return (
         <AppBar
             position="fixed"
             sx={{
-                width: { md: `calc(100% - 280px)` },
-                ml: { md: `280px` },
+                width: { md: `calc(100% - ${sidebarWidth}px)` },
+                ml: { md: `${sidebarWidth}px` },
                 background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
                 boxShadow: '0 4px 20px rgba(139, 92, 246, 0.3)',
+                transition: 'width 0.3s ease, margin-left 0.3s ease',
             }}
         >
             <Toolbar>

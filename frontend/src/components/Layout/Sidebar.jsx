@@ -20,6 +20,7 @@ import {
     ChevronLeft as ChevronLeftIcon,
     ChevronRight as ChevronRightIcon,
     Terminal as TerminalIcon,
+    People as PeopleIcon,
     ExpandLess,
     ExpandMore,
 } from '@mui/icons-material';
@@ -40,6 +41,7 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                 { id: 'nodewar', label: 'Node War', icon: <GamesIcon />, badge: null },
             ]
         },
+        { id: 'members', label: 'Membros', icon: <PeopleIcon />, badge: null },
         { id: 'settings', label: 'Configurações', icon: <SettingsIcon />, badge: null },
     ];
 

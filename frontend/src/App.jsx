@@ -18,6 +18,7 @@ import AlertMessage from './components/UI/AlertMessage';
 import WelcomePage from './components/Pages/WelcomePage';
 import BotStatusPage from './components/Pages/BotStatusPage';
 import NodeWarPage from './components/Pages/NodeWarPage';
+import MembersPage from './components/Pages/MembersPage';
 import SettingsPage from './components/Pages/SettingsPage';
 
 // Hooks
@@ -45,6 +46,7 @@ function App() {
         { id: 'welcome', label: 'Boas-vindas' },
         { id: 'status', label: 'Status do Bot' },
         { id: 'nodewar', label: 'Node War' },
+        { id: 'members', label: 'Membros' },
         { id: 'settings', label: 'Configurações' },
     ];
 
@@ -83,6 +85,8 @@ function App() {
                     loading={loading}
                     fetchChannels={fetchChannels}
                 />;
+            case 'members':
+                return <MembersPage />;
             case 'settings':
                 return <SettingsPage />;
             default:

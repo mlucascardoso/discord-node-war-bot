@@ -44,14 +44,15 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                 sx={{ 
                     height: 64, // Mesma altura do Toolbar
                     display: 'flex',
-                    flexDirection: isCollapsed ? 'row' : 'column',
+                    flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    px: isCollapsed ? 1 : 3,
+                    px: isCollapsed ? 0.5 : 3,
                     background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
                     color: '#FFFFFF',
                     borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
-                    position: 'relative'
+                    position: 'relative',
+                    overflow: 'hidden'
                 }}
             >
                 {!isCollapsed ? (
@@ -64,7 +65,7 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                         </Typography>
                     </>
                 ) : (
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mr: 2 }}>
                         👻
                     </Typography>
                 )}
@@ -74,19 +75,22 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                     onClick={onToggleCollapse}
                     sx={{
                         position: 'absolute',
-                        right: isCollapsed ? 8 : 8,
+                        right: isCollapsed ? 2 : 4,
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: 'white',
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        width: 24,
-                        height: 24,
+                        width: 20,
+                        height: 20,
+                        minWidth: 20,
+                        padding: 0,
+                        zIndex: 1,
                         '&:hover': {
                             backgroundColor: 'rgba(255, 255, 255, 0.2)',
                         }
                     }}
                 >
-                    {isCollapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+                    {isCollapsed ? <ChevronRightIcon sx={{ fontSize: 16 }} /> : <ChevronLeftIcon sx={{ fontSize: 16 }} />}
                 </IconButton>
             </Box>
 

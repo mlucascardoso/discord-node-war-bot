@@ -55,7 +55,7 @@ export async function getMemberById(id) {
  */
 export async function createMember(memberData) {
     try {
-        const response = await fetch(`${API_BASE}/members`, {
+        const response = await fetch(`${API_BASE}/members/create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

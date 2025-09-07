@@ -62,7 +62,7 @@ app.get('/api/members/:id', (req, res) => {
     }
 });
 
-app.post('/api/members', (req, res) => {
+app.post('/api/members/create', (req, res) => {
     try {
         const result = createMember(req.body);
 

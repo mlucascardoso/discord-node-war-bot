@@ -27,7 +27,10 @@ import {
     MenuItem,
     Fab,
     TablePagination,
-    InputAdornment
+    InputAdornment,
+    CircularProgress,
+    Alert,
+    Snackbar
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -36,15 +39,17 @@ import {
     Search as SearchIcon,
     FilterList as FilterIcon
 } from '@mui/icons-material';
-
-const CLASSES = [
-    'Warrior', 'Ranger', 'Sorceress', 'Berserker', 'Tamer', 'Musa', 'Maehwa',
-    'Valkyrie', 'Kunoichi', 'Ninja', 'Wizard', 'Witch', 'Dark Knight', 'Striker',
-    'Mystic', 'Lahn', 'Archer', 'Shai', 'Guardian', 'Hashashin', 'Nova', 'Sage',
-    'Corsair', 'Drakania', 'Woosa', 'Maegu', 'Scholar'
-];
-
-const PROFILES = ['Sucessão', 'Despertar'];
+import { 
+    getAllMembers, 
+    createMember, 
+    updateMember, 
+    deleteMember,
+    validateMemberData,
+    formatNumber,
+    getProfileColor,
+    AVAILABLE_CLASSES,
+    AVAILABLE_PROFILES
+} from '../../api/members.js';
 
 const MembersPage = () => {
     const [members, setMembers] = useState([]);
@@ -56,6 +61,9 @@ const MembersPage = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [openDialog, setOpenDialog] = useState(false);
     const [editingMember, setEditingMember] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [memberForm, setMemberForm] = useState({
         familyName: '',
         characterName: '',
@@ -67,57 +75,25 @@ const MembersPage = () => {
         profile: ''
     });
 
-    // Função para calcular gearscore: ((ap + ap desperto) / 2) + dp
-    const calculateGearscore = (ap, awakenedAp, dp) => {
-        return Math.round(((ap + awakenedAp) / 2) + dp);
-    };
-
-    // Mock data para exemplo
+    // Carregar membros da API
     useEffect(() => {
-        const mockMembers = [
-            {
-                id: 1,
-                familyName: 'Lutteh',
-                characterName: 'Kelzyh',
-                class: 'Guardian',
-                level: 63,
-                ap: 391,
-                awakenedAp: 391,
-                dp: 444,
-                profile: 'Despertar'
-            },
-            {
-                id: 2,
-                familyName: 'Banshee',
-                characterName: 'BansheeWarrior',
-                class: 'Warrior',
-                level: 65,
-                ap: 280,
-                awakenedAp: 285,
-                dp: 350,
-                profile: 'Sucessão'
-            },
-            {
-                id: 3,
-                familyName: 'ShadowHunter',
-                characterName: 'DarkArcher',
-                class: 'Archer',
-                level: 63,
-                ap: 270,
-                awakenedAp: 275,
-                dp: 340,
-                profile: 'Despertar'
+        const fetchMembers = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const membersData = await getAllMembers();
+                setMembers(membersData);
+                setFilteredMembers(membersData);
+            } catch (err) {
+                console.error('Error fetching members:', err);
+                setError('Erro ao carregar membros');
+                setSnackbar({ open: true, message: 'Erro ao carregar membros', severity: 'error' });
+            } finally {
+                setLoading(false);
             }
-        ];
+        };
 
-        // Adicionar gearscore calculado
-        const membersWithGearscore = mockMembers.map(member => ({
-            ...member,
-            gearscore: calculateGearscore(member.ap, member.awakenedAp, member.dp)
-        }));
-
-        setMembers(membersWithGearscore);
-        setFilteredMembers(membersWithGearscore);
+        fetchMembers();
     }, []);
 
     // Filtrar membros
@@ -175,53 +151,100 @@ const MembersPage = () => {
         }));
     };
 
-    const handleSaveMember = () => {
-        const ap = parseInt(memberForm.ap) || 0;
-        const awakenedAp = parseInt(memberForm.awakenedAp) || 0;
-        const dp = parseInt(memberForm.dp) || 0;
+    const handleSaveMember = async () => {
+        try {
+            // Validar dados
+            const validation = validateMemberData(memberForm);
+            if (!validation.isValid) {
+                setSnackbar({ 
+                    open: true, 
+                    message: validation.errors.join(', '), 
+                    severity: 'error' 
+                });
+                return;
+            }
 
-        if (editingMember) {
-            // Editar membro existente
-            const updatedMember = {
-                ...memberForm,
-                id: editingMember.id,
+            const memberData = {
+                familyName: memberForm.familyName.trim(),
+                characterName: memberForm.characterName.trim(),
+                class: memberForm.class,
                 level: parseInt(memberForm.level) || 1,
-                ap,
-                awakenedAp,
-                dp,
-                gearscore: calculateGearscore(ap, awakenedAp, dp)
+                ap: parseInt(memberForm.ap) || 0,
+                awakenedAp: parseInt(memberForm.awakenedAp) || 0,
+                dp: parseInt(memberForm.dp) || 0,
+                profile: memberForm.profile
             };
-            setMembers(prev => prev.map(member =>
-                member.id === editingMember.id ? updatedMember : member
-            ));
-        } else {
-            // Adicionar novo membro
-            const newMember = {
-                ...memberForm,
-                id: Date.now(),
-                level: parseInt(memberForm.level) || 1,
-                ap,
-                awakenedAp,
-                dp,
-                gearscore: calculateGearscore(ap, awakenedAp, dp)
-            };
-            setMembers(prev => [...prev, newMember]);
+
+            if (editingMember) {
+                // Editar membro existente
+                const updatedMember = await updateMember(editingMember.id, memberData);
+                setMembers(prev => prev.map(member =>
+                    member.id === editingMember.id ? updatedMember : member
+                ));
+                setSnackbar({ 
+                    open: true, 
+                    message: 'Membro atualizado com sucesso!', 
+                    severity: 'success' 
+                });
+            } else {
+                // Adicionar novo membro
+                const newMember = await createMember(memberData);
+                setMembers(prev => [...prev, newMember]);
+                setSnackbar({ 
+                    open: true, 
+                    message: 'Membro criado com sucesso!', 
+                    severity: 'success' 
+                });
+            }
+            
+            handleCloseDialog();
+        } catch (error) {
+            console.error('Error saving member:', error);
+            setSnackbar({ 
+                open: true, 
+                message: `Erro ao salvar membro: ${error.message}`, 
+                severity: 'error' 
+            });
         }
-        handleCloseDialog();
     };
 
-    const handleDeleteMember = (memberId) => {
-        setMembers(prev => prev.filter(member => member.id !== memberId));
+    const handleDeleteMember = async (memberId) => {
+        try {
+            await deleteMember(memberId);
+            setMembers(prev => prev.filter(member => member.id !== memberId));
+            setSnackbar({ 
+                open: true, 
+                message: 'Membro excluído com sucesso!', 
+                severity: 'success' 
+            });
+        } catch (error) {
+            console.error('Error deleting member:', error);
+            setSnackbar({ 
+                open: true, 
+                message: `Erro ao excluir membro: ${error.message}`, 
+                severity: 'error' 
+            });
+        }
     };
 
-    const getProfileColor = (profile) => {
-        return profile === 'Sucessão' ? 'primary' : 'secondary';
+    // Função para fechar snackbar
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
     };
 
-    const formatNumber = (num) => {
-        if (num === undefined || num === null || num === '') return '0';
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    };
+    // Loading state
+    if (loading) {
+        return (
+            <Container maxWidth="xl">
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                    <CircularProgress size={60} />
+                    <Typography variant="h6" sx={{ ml: 2 }}>
+                        Carregando membros...
+                    </Typography>
+                </Box>
+            </Container>
+        );
+    }
 
     return (
         <Container maxWidth="xl">
@@ -262,7 +285,7 @@ const MembersPage = () => {
                                     label="Classe"
                                 >
                                     <MenuItem value="">Todas</MenuItem>
-                                    {CLASSES.map(cls => (
+                                    {AVAILABLE_CLASSES.map(cls => (
                                         <MenuItem key={cls} value={cls}>{cls}</MenuItem>
                                     ))}
                                 </Select>
@@ -277,7 +300,7 @@ const MembersPage = () => {
                                     label="Perfil"
                                 >
                                     <MenuItem value="">Todos</MenuItem>
-                                    {PROFILES.map(profile => (
+                                    {AVAILABLE_PROFILES.map(profile => (
                                         <MenuItem key={profile} value={profile}>{profile}</MenuItem>
                                     ))}
                                 </Select>
@@ -445,7 +468,7 @@ const MembersPage = () => {
                                     onChange={(e) => handleFormChange('class', e.target.value)}
                                     label="Classe"
                                 >
-                                    {CLASSES.map(cls => (
+                                    {AVAILABLE_CLASSES.map(cls => (
                                         <MenuItem key={cls} value={cls}>{cls}</MenuItem>
                                     ))}
                                 </Select>
@@ -495,7 +518,7 @@ const MembersPage = () => {
                                     onChange={(e) => handleFormChange('profile', e.target.value)}
                                     label="Perfil"
                                 >
-                                    {PROFILES.map(profile => (
+                                    {AVAILABLE_PROFILES.map(profile => (
                                         <MenuItem key={profile} value={profile}>{profile}</MenuItem>
                                     ))}
                                 </Select>
@@ -514,6 +537,21 @@ const MembersPage = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Snackbar para notificações */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+            >
+                <Alert 
+                    onClose={handleCloseSnackbar} 
+                    severity={snackbar.severity} 
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };

@@ -10,7 +10,9 @@ import {
     MenuItem,
     FormControl,
     InputLabel,
-    Chip
+    Chip,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import {
     BarChart,
@@ -33,72 +35,43 @@ import {
     Assessment as AssessmentIcon,
     Star as StarIcon
 } from '@mui/icons-material';
+import { getAllMembers, getMembersStats } from '../../api/members.js';
 
 const DashboardPage = () => {
     const [members, setMembers] = useState([]);
     const [selectedMember, setSelectedMember] = useState('all');
     const [evolutionData, setEvolutionData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Função para calcular gearscore: ((ap + ap desperto) / 2) + dp
-    const calculateGearscore = (ap, awakenedAp, dp) => {
-        return Math.round(((ap + awakenedAp) / 2) + dp);
-    };
-
-    // Mock data para exemplo - mesmos dados da página de membros
+    // Carregar dados dos membros da API
     useEffect(() => {
-        const mockMembers = [
-            {
-                id: 1,
-                familyName: 'Lutteh',
-                characterName: 'Kelzyh',
-                class: 'Guardian',
-                level: 63,
-                ap: 391,
-                awakenedAp: 391,
-                dp: 444,
-                profile: 'Despertar'
-            },
-            {
-                id: 2,
-                familyName: 'Banshee',
-                characterName: 'BansheeWarrior',
-                class: 'Warrior',
-                level: 65,
-                ap: 280,
-                awakenedAp: 285,
-                dp: 350,
-                profile: 'Sucessão'
-            },
-            {
-                id: 3,
-                familyName: 'ShadowHunter',
-                characterName: 'DarkArcher',
-                class: 'Archer',
-                level: 63,
-                ap: 270,
-                awakenedAp: 275,
-                dp: 340,
-                profile: 'Despertar'
+        const fetchMembers = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const membersData = await getAllMembers();
+                setMembers(membersData);
+
+                // Mock data para evolução (dados históricos simulados baseados nos membros reais)
+                const mockEvolution = [
+                    { month: 'Jan', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 15 }), {}) },
+                    { month: 'Fev', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 10 }), {}) },
+                    { month: 'Mar', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 5 }), {}) },
+                    { month: 'Abr', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 2 }), {}) },
+                    { month: 'Mai', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore }), {}) }
+                ];
+                setEvolutionData(mockEvolution);
+            } catch (err) {
+                console.error('Error fetching members:', err);
+                setError('Erro ao carregar dados dos membros');
+            } finally {
+                setLoading(false);
             }
-        ];
+        };
 
-        // Adicionar gearscore calculado
-        const membersWithGearscore = mockMembers.map(member => ({
-            ...member,
-            gearscore: calculateGearscore(member.ap, member.awakenedAp, member.dp)
-        }));
-
-        setMembers(membersWithGearscore);
-
-        // Mock data para evolução (simulando dados históricos)
-        const mockEvolution = [
-            { month: 'Jan', Lutteh: 820, Banshee: 595, ShadowHunter: 580 },
-            { month: 'Fev', Lutteh: 825, Banshee: 605, ShadowHunter: 590 },
-            { month: 'Mar', Lutteh: 830, Banshee: 615, ShadowHunter: 600 },
-            { month: 'Abr', Lutteh: 835, Banshee: 625, ShadowHunter: 610 },
-            { month: 'Mai', Lutteh: 835, Banshee: 632, ShadowHunter: 612 }
-        ];
-        setEvolutionData(mockEvolution);
+        fetchMembers();
     }, []);
 
     // Calcular estatísticas
@@ -133,6 +106,29 @@ const DashboardPage = () => {
         value: count,
         fill: colors[index % colors.length]
     }));
+
+    // Loading state
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                <CircularProgress size={60} />
+                <Typography variant="h6" sx={{ ml: 2 }}>
+                    Carregando dados dos membros...
+                </Typography>
+            </Box>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ p: 3 }}>

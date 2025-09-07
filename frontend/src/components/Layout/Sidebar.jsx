@@ -30,10 +30,11 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
 
     const menuItems = [
         { id: 'welcome', label: 'Boas-vindas', icon: <DashboardIcon />, badge: null },
-        { 
-            id: 'commands', 
-            label: 'Comandos BOT', 
-            icon: <TerminalIcon />, 
+        { id: 'members', label: 'Membros', icon: <PeopleIcon />, badge: null },
+        {
+            id: 'commands',
+            label: 'Comandos BOT',
+            icon: <TerminalIcon />,
             badge: null,
             isSubmenu: true,
             children: [
@@ -41,7 +42,6 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                 { id: 'nodewar', label: 'Node War', icon: <GamesIcon />, badge: null },
             ]
         },
-        { id: 'members', label: 'Membros', icon: <PeopleIcon />, badge: null },
         { id: 'settings', label: 'Configurações', icon: <SettingsIcon />, badge: null },
     ];
 

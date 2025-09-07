@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "buildCommand": "yarn frontend:install && yarn frontend:build",
+    "buildCommand": "VITE_API_URL='' yarn frontend:install && yarn frontend:build",
     "outputDirectory": "frontend/dist",
     "functions": {
         "backend/api/*.js": {

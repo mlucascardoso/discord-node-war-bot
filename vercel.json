@@ -1,16 +1,51 @@
 {
-    "buildCommand": "cd frontend && yarn install && yarn build",
-    "outputDirectory": "frontend/dist",
-    "functions": {
-        "backend/api/status.js": { "maxDuration": 30 },
-        "backend/api/channels.js": { "maxDuration": 30 },
-        "backend/api/nodewar.js": { "maxDuration": 30 },
-        "backend/api/index.js": { "maxDuration": 30 }
-    },
-    "rewrites": [
+    "version": 2,
+    "builds": [
         {
-            "source": "/api/(.*)",
-            "destination": "/backend/api/$1"
+            "src": "frontend/package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "buildCommand": "yarn build",
+                "outputDirectory": "dist"
+            }
+        },
+        {
+            "src": "backend/api/status.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "backend/api/channels.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "backend/api/nodewar.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "backend/api/index.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/status",
+            "dest": "/backend/api/status"
+        },
+        {
+            "src": "/api/channels",
+            "dest": "/backend/api/channels"
+        },
+        {
+            "src": "/api/nodewar",
+            "dest": "/backend/api/nodewar"
+        },
+        {
+            "src": "/api/(.*)",
+            "dest": "/backend/api/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/frontend/dist/$1"
         }
     ]
 }

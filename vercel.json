@@ -1,8 +1,10 @@
 {
-    "buildCommand": "cd frontend && yarn install && VITE_API_URL='' yarn build",
+    "buildCommand": "cd frontend && yarn install && yarn build",
     "outputDirectory": "frontend/dist",
     "functions": {
-        "backend/api/*.js": {}
+        "backend/api/*.js": {
+            "maxDuration": 30
+        }
     },
     "rewrites": [
         {

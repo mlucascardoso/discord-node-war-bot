@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, EmbedBuilder, GatewayIntentBits } from 'discord.js';
 
 import { NODE_WAR_CONFIG, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
 
@@ -10,15 +10,20 @@ const client = new Client({
 });
 
 client.once('clientReady', async () => {
-    console.log('Olá mundo! Bot está online!');
-    console.log(`Logado como ${client.user.tag}!`);
+    console.log('👻 Espírito Banshee despertou! Bot está online!');
+    console.log(`🌙 Conectado como ${client.user.tag} - Guardião da Guilda Banshee`);
 
     await client.application.commands.create({
         name: 'nodewar',
-        description: 'Posta a agenda da Node War'
+        description: '🔮 Invoca a agenda da Batalha Mística da Banshee'
     });
 
-    console.log('Comandos /nodewar registrados!');
+    await client.application.commands.create({
+        name: 'banshee',
+        description: '👻 Informações sobre a Guilda Banshee'
+    });
+
+    console.log('⚔️ Comandos místicos registrados com sucesso!');
 });
 
 client.on('messageCreate', (message) => {
@@ -34,6 +39,29 @@ client.on('interactionCreate', async (interaction) => {
             const buttons = createNodeWarButtons();
             await interaction.reply({ ...messageData, components: buttons });
         }
+
+        if (interaction.commandName === 'banshee') {
+            const embed = new EmbedBuilder()
+                .setTitle('👻 GUILDA BANSHEE')
+                .setDescription(
+                    '🌟 *"Onde as almas perdidas encontram seu destino"*\n\n' +
+                        '**Sobre a Banshee:**\n' +
+                        '🔮 Somos uma guilda mística dedicada às batalhas épicas\n' +
+                        '⚔️ Focamos em estratégias devastadoras e união inquebrantável\n' +
+                        '👻 Cada membro é um espírito guerreiro valioso\n\n' +
+                        '**Nossos Valores:**\n' +
+                        '💀 **Força Mística** - Poder através da união\n' +
+                        '🌙 **Estratégia** - Planejamento e execução perfeita\n' +
+                        '⚡ **Lealdade** - Nunca abandonamos um companheiro\n\n' +
+                        '**Comandos Disponíveis:**\n' +
+                        '`/nodewar` - Invocar agenda de batalha\n' +
+                        '`/banshee` - Informações da guilda'
+                )
+                .setColor('#8B5CF6')
+                .setFooter({ text: 'Bot Banshee v1.0 - Guardião Místico' });
+
+            await interaction.reply({ embeds: [embed] });
+        }
     }
 
     // Handler para botões da Node War
@@ -43,7 +71,7 @@ client.on('interactionCreate', async (interaction) => {
         const role = NODE_WAR_CONFIG.roles[roleName];
 
         if (!role) {
-            await interaction.reply({ content: '❌ Função não encontrada!', ephemeral: true });
+            await interaction.reply({ content: '💀 Função mística não encontrada!', ephemeral: true });
             return;
         }
 
@@ -60,7 +88,7 @@ client.on('interactionCreate', async (interaction) => {
         if (userCurrentRole === roleName) {
             role.members = role.members.filter((member) => member !== userName);
 
-            await interaction.reply({ content: `❌ Você foi removido da função **${roleName}**!`, ephemeral: true });
+            await interaction.reply({ content: `👻 Espírito removido da função **${roleName}**! Até a próxima batalha.`, ephemeral: true });
         } else {
             // Remover de função anterior se existir
             if (userCurrentRole) {
@@ -71,14 +99,14 @@ client.on('interactionCreate', async (interaction) => {
             if (role.members.length < role.max) {
                 role.members.push(userName);
 
-                await interaction.reply({ content: `✅ Você foi inscrito na função **${role.emoji} ${roleName}**!`, ephemeral: true });
+                await interaction.reply({ content: `🔮 Espírito invocado com sucesso! Você foi aceito na função **${role.emoji} ${roleName}**!`, ephemeral: true });
             } else {
                 // Adicionar à waitlist
                 if (!role.waitlist.includes(userName)) {
                     role.waitlist.push(userName);
                 }
 
-                await interaction.reply({ content: `⏳ Função **${roleName}** lotada! Você foi adicionado à waitlist.`, ephemeral: true });
+                await interaction.reply({ content: `🌙 Função **${roleName}** lotada! Seu espírito foi adicionado à lista de espera.`, ephemeral: true });
             }
         }
 

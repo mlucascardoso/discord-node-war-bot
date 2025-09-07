@@ -3,19 +3,21 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'disc
 export const NODE_WAR_CONFIG = {
     totalVagas: 40,
     tier: 2,
+    guildName: '👻 BANSHEE',
+    motto: 'Onde as almas perdidas encontram seu destino',
     roles: {
-        BOMBER: { emoji: '💥', max: 4, members: [], waitlist: [] },
+        BOMBER: { emoji: '💀', max: 4, members: [], waitlist: [] },
         RANGED: { emoji: '🏹', max: 4, members: [], waitlist: [] },
-        PA: { emoji: '🧙‍♂️', max: 3, members: [], waitlist: [] },
-        DEFESA: { emoji: '🔥', max: 3, members: [], waitlist: [] },
+        PA: { emoji: '🔮', max: 3, members: [], waitlist: [] },
+        DEFESA: { emoji: '🛡️', max: 3, members: [], waitlist: [] },
         FRONTLINE: { emoji: '⚔️', max: 6, members: [], waitlist: [] },
-        'DO-SA': { emoji: '🚬', max: 4, members: [], waitlist: [] },
+        'DO-SA': { emoji: '🌙', max: 4, members: [], waitlist: [] },
         BLOCO: { emoji: '🧱', max: 3, members: [], waitlist: [] },
         ELEFANTE: { emoji: '🐘', max: 1, members: [], waitlist: [] },
-        STRIKER: { emoji: '🥊', max: 4, members: [], waitlist: [] },
+        STRIKER: { emoji: '👻', max: 4, members: [], waitlist: [] },
         SHAI: { emoji: '🥁', max: 4, members: [], waitlist: [] },
-        CALLER: { emoji: '🎙️', max: 3, members: [], waitlist: [] },
-        BANDEIRA: { emoji: '🚩', max: 1, members: [], waitlist: [] }
+        CALLER: { emoji: '📢', max: 3, members: [], waitlist: [] },
+        BANDEIRA: { emoji: '🏴‍☠️', max: 1, members: [], waitlist: [] }
     }
 };
 
@@ -49,20 +51,23 @@ export const generateNodeWarMessage = () => {
     const nextDate = getNextNodeWarDate();
     const formattedDate = formatDateToPT(nextDate);
 
-    // Criar embed principal
+    // Criar embed principal com tema Banshee
     const embed = new EmbedBuilder()
-        .setTitle('NODE WAR')
+        .setTitle(`${NODE_WAR_CONFIG.guildName} - BATALHA MÍSTICA`)
         .setDescription(
-            `🏰 **NODE TIER ${NODE_WAR_CONFIG.tier} — ${NODE_WAR_CONFIG.totalVagas} VAGAS**\n\n` +
-                '✅ **CANAIS PARA CONFIRMAR SUA PARTICIPAÇÃO**\n' +
+            `🌟 *"${NODE_WAR_CONFIG.motto}"*\n\n` +
+                `🏰 **NODE TIER ${NODE_WAR_CONFIG.tier} — ${NODE_WAR_CONFIG.totalVagas} ESPÍRITOS GUERREIROS**\n\n` +
+                '👻 **CONFIRME SUA PRESENÇA NO REINO DAS SOMBRAS**\n' +
                 '(Mediah 1 / Valencia 1)\n\n' +
-                '⏰ O servidor onde acontecerá a guerra será anunciado às 20:45\n' +
-                '➡️ Todos os membros devem estar presentes no Discord até esse horário.\n' +
-                '🔁 Atenção: A partir das 20:00 está liberado o roubo de vaga.\n\n' +
-                '**Time**\n' +
-                `⏰ **Data/hora da node war:** ${formattedDate} 21:00 - 22:00\n`
+                '🌙 **Invocação:** O campo de batalha será revelado às 20:45\n' +
+                '⚡ Todos os guerreiros místicos devem estar conectados no Discord\n' +
+                '🔮 **Atenção:** A partir das 20:00 inicia a competição por vagas\n\n' +
+                '**Ritual de Guerra**\n' +
+                `🕘 **Horário da Batalha:** ${formattedDate} 21:00 - 22:00\n` +
+                '💀 **Prepare suas almas para a guerra!**'
         )
-        .setColor('#ff6b35');
+        .setColor('#8B5CF6')
+        .setThumbnail('https://i.imgur.com/your-banshee-logo.png'); // Você pode adicionar uma imagem da guilda aqui
 
     // Organizar funções em 3 colunas usando campos inline
     const roleKeys = Object.keys(NODE_WAR_CONFIG.roles);
@@ -83,14 +88,14 @@ export const generateNodeWarMessage = () => {
                 const currentCount = role.members.length;
                 const maxCount = role.max;
 
-                let fieldValue = `🔒@${role.emoji} ${roleName}\n`;
+                let fieldValue = `🔮 ${role.emoji} ${roleName}\n`;
 
                 if (role.members.length > 0) {
                     role.members.forEach((member) => {
                         fieldValue += `👻 ${member}\n`;
                     });
                 } else {
-                    fieldValue += '-\n';
+                    fieldValue += '🌫️ *Aguardando espíritos...*\n';
                 }
 
                 embed.addFields({
@@ -121,11 +126,11 @@ export const generateNodeWarMessage = () => {
     if (waitlistMembers.length > 0) {
         let waitlistText = '';
         waitlistMembers.forEach((member) => {
-            waitlistText += `⏳ ${member}\n`;
+            waitlistText += `🌙 ${member}\n`;
         });
 
         embed.addFields({
-            name: '**Waitlist**',
+            name: '🌟 **Espíritos em Espera**',
             value: waitlistText,
             inline: false
         });

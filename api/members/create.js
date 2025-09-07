@@ -1,7 +1,7 @@
 import { createMember } from '../../backend/src/api/members.js';
 import { handleMethodNotAllowed, handleOptionsRequest, setCorsHeaders } from '../../backend/src/utils/cors.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
     const allowedMethods = ['POST', 'OPTIONS'];
     setCorsHeaders(res, allowedMethods);
 
@@ -14,7 +14,7 @@ export default function handler(req, res) {
     }
 
     try {
-        const result = createMember(req.body);
+        const result = await createMember(req.body);
         if (result.success) {
             res.status(201).json(result.data);
         } else {

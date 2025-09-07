@@ -1,7 +1,7 @@
 import { getMembersStats } from '../../backend/src/api/members.js';
 import { handleMethodNotAllowed, handleOptionsRequest, setCorsHeaders } from '../../backend/src/utils/cors.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
     const allowedMethods = ['GET', 'OPTIONS'];
     setCorsHeaders(res, allowedMethods);
 
@@ -14,7 +14,7 @@ export default function handler(req, res) {
     }
 
     try {
-        const stats = getMembersStats();
+        const stats = await getMembersStats();
         res.status(200).json(stats);
     } catch (error) {
         console.error('Error getting members stats:', error);

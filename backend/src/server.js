@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import { client, initializeBot } from './discord/client.js';
+import { createMember, deleteMember, getAllMembers, getMemberById, getMembersStats, updateMember } from './api/members.js';
 import { createNodeWarButtons, generateNodeWarMessage } from './discord/commands/node-war.js';
 
 const app = express();
@@ -23,6 +24,97 @@ async function ensureBotInitialized(req, res, next) {
     }
     next();
 }
+
+// Members API Routes
+app.get('/api/members', (req, res) => {
+    try {
+        const members = getAllMembers();
+        res.json(members);
+    } catch (error) {
+        console.error('Error getting members:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/members/stats', (req, res) => {
+    try {
+        const stats = getMembersStats();
+        res.json(stats);
+    } catch (error) {
+        console.error('Error getting members stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/members/:id', (req, res) => {
+    try {
+        const { id } = req.params;
+        const member = getMemberById(id);
+
+        if (!member) {
+            return res.status(404).json({ error: 'Member not found' });
+        }
+
+        res.json(member);
+    } catch (error) {
+        console.error('Error getting member:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/members', (req, res) => {
+    try {
+        const result = createMember(req.body);
+
+        if (result.success) {
+            res.status(201).json(result.data);
+        } else {
+            res.status(400).json({
+                error: result.error,
+                details: result.details
+            });
+        }
+    } catch (error) {
+        console.error('Error creating member:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/members/:id', (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = updateMember(id, req.body);
+
+        if (result.success) {
+            res.json(result.data);
+        } else {
+            const statusCode = result.error === 'Member not found' ? 404 : 400;
+            res.status(statusCode).json({
+                error: result.error,
+                details: result.details
+            });
+        }
+    } catch (error) {
+        console.error('Error updating member:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/members/:id', (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = deleteMember(id);
+
+        if (result.success) {
+            res.json({ message: 'Member deleted successfully', data: result.data });
+        } else {
+            res.status(404).json({ error: result.error });
+        }
+    } catch (error) {
+        console.error('Error deleting member:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 app.get('/api/status', ensureBotInitialized, (req, res) => {
     res.json({

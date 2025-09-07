@@ -9,7 +9,7 @@ const client = new Client({
     intents: Object.values(GatewayIntentBits)
 });
 
-client.once('ready', async () => {
+client.once('clientReady', async () => {
     console.log('Olá mundo! Bot está online!');
     console.log(`Logado como ${client.user.tag}!`);
 
@@ -88,4 +88,25 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+let botStarted = false;
+
+async function startBot() {
+    if (!botStarted) {
+        botStarted = true;
+        await client.login(process.env.DISCORD_TOKEN);
+    }
+}
+
+if (process.env.NODE_ENV !== 'production') {
+    startBot();
+}
+
+export default async function handler(req, res) {
+    await startBot();
+
+    res.status(200).json({
+        status: 'Bot is running',
+        timestamp: new Date().toISOString(),
+        botReady: client.isReady()
+    });
+}

@@ -1,8 +1,16 @@
 {
-  "version": 2,
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 30
-    }
-  }
+    "version": 2,
+    "buildCommand": "yarn frontend:install && yarn frontend:build",
+    "outputDirectory": "frontend/dist",
+    "functions": {
+        "backend/api/*.js": {
+            "maxDuration": 30
+        }
+    },
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "/backend/api/$1"
+        }
+    ]
 }

@@ -4,6 +4,12 @@ import { createNodeWarButtons, generateNodeWarMessage } from '../src/commands/no
 let botInitialized = false;
 
 export default async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -17,7 +23,6 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'Falha ao inicializar bot' });
         }
     }
-
     const { channelId } = req.body;
     if (!channelId) {
         return res.status(400).json({ error: 'channelId é obrigatório' });
@@ -30,12 +35,7 @@ export default async function handler(req, res) {
         const messageData = generateNodeWarMessage();
         const buttons = createNodeWarButtons();
         const message = await channel.send({ ...messageData, components: buttons });
-        res.json({
-            success: true,
-            message: 'Comando nodewar executado com sucesso',
-            messageId: message.id,
-            channelId: channel.id
-        });
+        res.json({ success: true, message: 'Comando nodewar executado com sucesso', messageId: message.id, channelId: channel.id });
     } catch (error) {
         console.error('Erro ao executar comando nodewar:', error);
         res.status(500).json({ error: 'Erro ao executar comando' });

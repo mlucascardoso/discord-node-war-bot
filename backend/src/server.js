@@ -1,8 +1,10 @@
+import cors from 'cors';
 import express from 'express';
 import { client, initializeBot } from './discord.js';
 import { createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;

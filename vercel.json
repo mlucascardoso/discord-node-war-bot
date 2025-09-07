@@ -1,17 +1,15 @@
 {
-    "version": 2,
-    "buildCommand": "VITE_API_URL='' yarn frontend:install && yarn frontend:build",
+    "buildCommand": "cd frontend && yarn install && VITE_API_URL='' yarn build",
     "outputDirectory": "frontend/dist",
-    "builds": [
-        {
-            "src": "backend/api/*.js",
-            "use": "@vercel/node"
+    "functions": {
+        "backend/api/*.js": {
+            "runtime": "nodejs18.x"
         }
-    ],
-    "routes": [
+    },
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "/backend/api/$1"
+            "source": "/api/(.*)",
+            "destination": "/backend/api/$1"
         }
     ]
 }

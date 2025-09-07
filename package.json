@@ -25,6 +25,7 @@
         "vite": "^7.1.4"
     },
     "dependencies": {
+        "@vercel/postgres": "^0.10.0",
         "cors": "^2.8.5",
         "discord.js": "^14.22.1",
         "dotenv": "^16.4.5",

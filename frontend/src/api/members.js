@@ -175,13 +175,13 @@ export function validateMemberData(memberData) {
     if (!level || level < 1 || level > 70) errors.push('Level deve estar entre 1 e 70');
 
     const ap = Number(memberData.ap);
-    if (ap < 0 || ap > 999) errors.push('AP deve estar entre 0 e 999');
+    if (ap < 0 || ap > 400) errors.push('AP deve estar entre 0 e 400');
 
     const awakenedAp = Number(memberData.awakenedAp);
-    if (awakenedAp < 0 || awakenedAp > 999) errors.push('AP Despertar deve estar entre 0 e 999');
+    if (awakenedAp < 0 || awakenedAp > 400) errors.push('AP Despertar deve estar entre 0 e 400');
 
     const dp = Number(memberData.dp);
-    if (dp < 0 || dp > 999) errors.push('DP deve estar entre 0 e 999');
+    if (dp < 0 || dp > 600) errors.push('DP deve estar entre 0 e 600');
 
     return { isValid: errors.length === 0, errors };
 }

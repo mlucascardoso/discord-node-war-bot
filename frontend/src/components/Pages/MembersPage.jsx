@@ -490,6 +490,7 @@ const MembersPage = () => {
                                 type="number"
                                 value={memberForm.ap}
                                 onChange={(e) => handleFormChange('ap', e.target.value)}
+                                inputProps={{ min: 0, max: 400 }}
                             />
                         </Grid>
                         <Grid item xs={12} sm={4}>
@@ -499,6 +500,7 @@ const MembersPage = () => {
                                 type="number"
                                 value={memberForm.awakenedAp}
                                 onChange={(e) => handleFormChange('awakenedAp', e.target.value)}
+                                inputProps={{ min: 0, max: 400 }}
                             />
                         </Grid>
                         <Grid item xs={12} sm={4}>
@@ -508,6 +510,7 @@ const MembersPage = () => {
                                 type="number"
                                 value={memberForm.dp}
                                 onChange={(e) => handleFormChange('dp', e.target.value)}
+                                inputProps={{ min: 0, max: 600 }}
                             />
                         </Grid>
                         <Grid item xs={12}>

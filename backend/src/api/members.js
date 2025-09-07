@@ -91,16 +91,16 @@ function validateMember(memberData) {
         errors.push('Level must be between 1 and 70');
     }
     const ap = Number(memberData.ap);
-    if (ap < 0 || ap > 999) {
-        errors.push('AP must be between 0 and 999');
+    if (ap < 0 || ap > 400) {
+        errors.push('AP must be between 0 and 400');
     }
     const awakenedAp = Number(memberData.awakenedAp);
-    if (awakenedAp < 0 || awakenedAp > 999) {
-        errors.push('Awakened AP must be between 0 and 999');
+    if (awakenedAp < 0 || awakenedAp > 400) {
+        errors.push('Awakened AP must be between 0 and 400');
     }
     const dp = Number(memberData.dp);
-    if (dp < 0 || dp > 999) {
-        errors.push('DP must be between 0 and 999');
+    if (dp < 0 || dp > 600) {
+        errors.push('DP must be between 0 and 600');
     }
     return {
         isValid: errors.length === 0,

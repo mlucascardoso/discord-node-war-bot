@@ -1,4 +1,4 @@
-import { client, initializeBot } from '../src/discord.js';
+import { client, initializeBot } from '../backend/src/discord.js';
 
 let botInitialized = false;
 
@@ -22,10 +22,13 @@ export default async function handler(req, res) {
         }
     }
 
-    res.json({
-        status: 'Bot is running',
-        timestamp: new Date().toISOString(),
-        botReady: client.isReady(),
-        botUser: client.user ? client.user.tag : null
-    });
+    const channels = client.channels.cache
+        .filter((channel) => channel.type === 0)
+        .map((channel) => ({
+            id: channel.id,
+            name: channel.name,
+            guildName: channel.guild?.name || 'DM'
+        }));
+
+    res.json({ channels });
 }

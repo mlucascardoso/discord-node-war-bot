@@ -6,6 +6,10 @@ import { useMediaQuery } from '@mui/material';
 // Theme
 import { bansheeTheme } from './theme/bansheeTheme';
 
+// Auth
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
+
 // Layout Components
 import Layout from './components/Layout/Layout';
 import AlertMessage from './components/UI/AlertMessage';
@@ -94,20 +98,24 @@ function App() {
     return (
         <ThemeProvider theme={bansheeTheme}>
             <CssBaseline />
-            <Layout
-                currentPage={currentPage}
-                onMenuClick={handleMenuClick}
-                mobileOpen={mobileOpen}
-                onDrawerToggle={handleDrawerToggle}
-                botStatus={botStatus}
-                currentPageTitle={getCurrentPageTitle()}
-            >
-                <AlertMessage 
-                    message={message} 
-                    onClose={() => setMessage(null)} 
-                />
-                {renderCurrentPage()}
-            </Layout>
+            <AuthProvider>
+                <ProtectedRoute>
+                    <Layout
+                        currentPage={currentPage}
+                        onMenuClick={handleMenuClick}
+                        mobileOpen={mobileOpen}
+                        onDrawerToggle={handleDrawerToggle}
+                        botStatus={botStatus}
+                        currentPageTitle={getCurrentPageTitle()}
+                    >
+                        <AlertMessage 
+                            message={message} 
+                            onClose={() => setMessage(null)} 
+                        />
+                        {renderCurrentPage()}
+                    </Layout>
+                </ProtectedRoute>
+            </AuthProvider>
         </ThemeProvider>
     );
 }

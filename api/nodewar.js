@@ -1,5 +1,5 @@
-import { client, initializeBot } from '../backend/src/discord.js';
-import { createNodeWarButtons, generateNodeWarMessage } from '../backend/src/commands/node-war.js';
+import { client, initializeBot } from '../backend/src/discord/client.js';
+import { createNodeWarButtons, generateNodeWarMessage } from '../backend/src/discord/commands/node-war.js';
 
 let botInitialized = false;
 

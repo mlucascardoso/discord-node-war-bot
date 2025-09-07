@@ -1,4 +1,4 @@
-import { client, initializeBot } from '../backend/src/discord.js';
+import { client, initializeBot } from '../backend/src/discord/client.js';
 
 let botInitialized = false;
 

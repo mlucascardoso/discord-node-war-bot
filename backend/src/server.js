@@ -1,7 +1,7 @@
 import cors from 'cors';
 import express from 'express';
-import { client, initializeBot } from './discord.js';
-import { createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
+import { client, initializeBot } from './discord/client.js';
+import { createNodeWarButtons, generateNodeWarMessage } from './discord/commands/node-war.js';
 
 const app = express();
 app.use(cors());

@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "familyName": "Lutteh",
+    "characterName": "Kelzyh",
+    "class": "Guardian",
+    "level": 63,
+    "ap": 391,
+    "awakenedAp": 391,
+    "dp": 444,
+    "profile": "Despertar",
+    "gearscore": 417.5,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "familyName": "Banshee",
+    "characterName": "BansheeWarrior",
+    "class": "Warrior",
+    "level": 65,
+    "ap": 280,
+    "awakenedAp": 285,
+    "dp": 350,
+    "profile": "Sucessão",
+    "gearscore": 632.5,
+    "createdAt": "2024-01-02T00:00:00.000Z",
+    "updatedAt": "2024-01-02T00:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "familyName": "teste",
+    "characterName": "teste",
+    "class": "Witch",
+    "level": 55,
+    "ap": 55,
+    "awakenedAp": 55,
+    "dp": 55,
+    "profile": "Sucessão",
+    "gearscore": 110,
+    "createdAt": "2025-09-07T19:22:40.060Z",
+    "updatedAt": "2025-09-07T19:22:40.060Z"
+  }
+]

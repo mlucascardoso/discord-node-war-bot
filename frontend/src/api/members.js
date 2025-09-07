@@ -13,8 +13,15 @@ const API_BASE = '/api';
  */
 async function handleResponse(response) {
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ error: 'Erro de rede' }));
+        const error = new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+
+        // Anexar detalhes do erro se disponíveis
+        if (errorData.details) {
+            error.details = errorData.details;
+        }
+
+        throw error;
     }
     return response.json();
 }

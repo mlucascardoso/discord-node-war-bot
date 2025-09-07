@@ -1,106 +1,128 @@
 /**
  * Members API - CRUD operations for guild members
- * Handles all member-related operations with in-memory storage
+ * Handles all member-related operations with file-based persistence
  */
 
-// In-memory storage for members (will be replaced with database later)
-let members = [
-    {
-        id: 1,
-        familyName: 'Lutteh',
-        characterName: 'Kelzyh',
-        class: 'Guardian',
-        level: 63,
-        ap: 391,
-        awakenedAp: 391,
-        dp: 444,
-        profile: 'Despertar',
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
-    },
-    {
-        id: 2,
-        familyName: 'Banshee',
-        characterName: 'BansheeWarrior',
-        class: 'Warrior',
-        level: 65,
-        ap: 280,
-        awakenedAp: 285,
-        dp: 350,
-        profile: 'Sucessão',
-        createdAt: new Date('2024-01-02'),
-        updatedAt: new Date('2024-01-02')
-    },
-    {
-        id: 3,
-        familyName: 'ShadowHunter',
-        characterName: 'DarkArcher',
-        class: 'Archer',
-        level: 63,
-        ap: 270,
-        awakenedAp: 275,
-        dp: 340,
-        profile: 'Despertar',
-        createdAt: new Date('2024-01-03'),
-        updatedAt: new Date('2024-01-03')
-    }
+import { getNextId, loadMembers, saveMembers } from '../utils/dataStore.js';
+
+export const AVAILABLE_CLASSES = [
+    'Warrior',
+    'Ranger',
+    'Sorceress',
+    'Berserker',
+    'Tamer',
+    'Musa',
+    'Maehwa',
+    'Valkyrie',
+    'Kunoichi',
+    'Ninja',
+    'Wizard',
+    'Witch',
+    'Dark Knight',
+    'Striker',
+    'Mystic',
+    'Lahn',
+    'Archer',
+    'Shai',
+    'Guardian',
+    'Hashashin',
+    'Nova',
+    'Sage',
+    'Corsair',
+    'Drakania',
+    'Woosa',
+    'Maegu',
+    'Scholar'
 ];
 
-// Calculate initial gearscores
-members = members.map((member) => ({
-    ...member,
-    gearscore: calculateGearscore(member.ap, member.awakenedAp, member.dp)
-}));
+export const AVAILABLE_PROFILES = ['Despertar', 'Sucessão'];
 
 /**
- * Calculate gearscore using the formula: ((ap + awakenedAp) / 2) + dp
+ * Calculate gearscore: ((ap + awakenedAp) / 2) + dp
  * @param {number} ap - Attack Power
  * @param {number} awakenedAp - Awakened Attack Power
  * @param {number} dp - Defense Power
  * @returns {number} Calculated gearscore
  */
-function calculateGearscore(ap, awakenedAp, dp) {
-    const numAp = Number(ap) || 0;
-    const numAwakenedAp = Number(awakenedAp) || 0;
-    const numDp = Number(dp) || 0;
+export function calculateGearscore(ap, awakenedAp, dp) {
+    return (Number(ap) + Number(awakenedAp)) / 2 + Number(dp);
+}
 
-    return Math.round((numAp + numAwakenedAp) / 2 + numDp);
+/**
+ * Format number for display
+ * @param {number|string} num - Number to format
+ * @returns {string} Formatted number
+ */
+export function formatNumber(num) {
+    if (num === undefined || num === null || num === '') {
+        return '0';
+    }
+    return Number(num).toLocaleString();
+}
+
+/**
+ * Get profile color for UI
+ * @param {string} profile - Profile name
+ * @returns {string} Color name
+ */
+export function getProfileColor(profile) {
+    return profile === 'Despertar' ? 'primary' : 'secondary';
+}
+
+/**
+ * Sanitize member data
+ * @param {object} memberData - Raw member data
+ * @returns {object} Sanitized member data
+ */
+function sanitizeMemberData(memberData) {
+    return {
+        familyName: String(memberData.familyName).trim(),
+        characterName: String(memberData.characterName).trim(),
+        class: String(memberData.class).trim(),
+        level: Number(memberData.level),
+        ap: Number(memberData.ap),
+        awakenedAp: Number(memberData.awakenedAp),
+        dp: Number(memberData.dp),
+        profile: String(memberData.profile).trim()
+    };
 }
 
 /**
  * Validate member data
  * @param {object} memberData - Member data to validate
- * @returns {object} Validation result with isValid flag and errors array
+ * @returns {object} Validation result
  */
 function validateMember(memberData) {
     const errors = [];
-    if (!memberData.familyName?.trim()) {
-        errors.push('Family name is required');
+
+    if (!memberData.familyName?.trim()) errors.push('Nome da família é obrigatório');
+    if (!memberData.characterName?.trim()) errors.push('Nome do personagem é obrigatório');
+    if (!memberData.class?.trim()) errors.push('Classe é obrigatória');
+    if (!memberData.profile?.trim()) errors.push('Perfil é obrigatório');
+
+    if (!AVAILABLE_CLASSES.includes(memberData.class)) {
+        errors.push('Classe deve ser uma das opções disponíveis');
     }
-    if (!memberData.characterName?.trim()) {
-        errors.push('Character name is required');
+
+    if (!AVAILABLE_PROFILES.includes(memberData.profile)) {
+        errors.push('Perfil deve ser uma das opções disponíveis');
     }
-    if (!memberData.class?.trim()) {
-        errors.push('Class is required');
-    }
-    if (!memberData.profile?.trim()) {
-        errors.push('Profile is required');
-    }
+
     const level = Number(memberData.level);
     if (!level || level < 1 || level > 70) {
-        errors.push('Level must be between 1 and 70');
+        errors.push('Level deve estar entre 1 e 70');
     }
     const ap = Number(memberData.ap);
     if (ap < 0 || ap > 400) {
-        errors.push('AP must be between 0 and 400');
+        errors.push('AP deve estar entre 0 e 400');
     }
     const awakenedAp = Number(memberData.awakenedAp);
     if (awakenedAp < 0 || awakenedAp > 400) {
-        errors.push('Awakened AP must be between 0 and 400');
+        errors.push('AP Despertar deve estar entre 0 e 400');
     }
     const dp = Number(memberData.dp);
     if (dp < 0 || dp > 600) {
-        errors.push('DP must be between 0 and 600');
+        errors.push('DP deve estar entre 0 e 600');
     }
     return {
         isValid: errors.length === 0,
@@ -109,45 +131,21 @@ function validateMember(memberData) {
 }
 
 /**
- * Sanitize and prepare member data for storage
- * @param {object} memberData - Raw member data
- * @returns {object} Sanitized member data
- */
-function sanitizeMemberData(memberData) {
-    return {
-        familyName: memberData.familyName?.trim(),
-        characterName: memberData.characterName?.trim(),
-        class: memberData.class?.trim(),
-        level: Number(memberData.level) || 1,
-        ap: Number(memberData.ap) || 0,
-        awakenedAp: Number(memberData.awakenedAp) || 0,
-        dp: Number(memberData.dp) || 0,
-        profile: memberData.profile?.trim()
-    };
-}
-
-/**
- * Generate next available ID
- * @returns {number} Next ID
- */
-function getNextId() {
-    return members.length > 0 ? Math.max(...members.map((m) => m.id)) + 1 : 1;
-}
-
-/**
  * Get all members
  * @returns {array} Members list ordered by family name
  */
 export function getAllMembers() {
+    const members = loadMembers();
     return [...members].sort((a, b) => a.familyName.localeCompare(b.familyName));
 }
 
 /**
  * Get member by ID
- * @param {number} id - Member ID
- * @returns {object|null} Member data or null if not found
+ * @param {string|number} id - Member ID
+ * @returns {object|null} Member object or null if not found
  */
 export function getMemberById(id) {
+    const members = loadMembers();
     return members.find((member) => member.id === Number(id)) || null;
 }
 
@@ -162,29 +160,32 @@ export function createMember(memberData) {
     if (!validation.isValid) {
         return {
             success: false,
-            error: 'Validation failed',
+            error: 'Erro de validação',
             details: validation.errors
         };
     }
+
+    const members = loadMembers();
     const existingMember = members.find((m) => m.familyName.toLowerCase() === memberData.familyName.toLowerCase());
     if (existingMember) {
         return {
             success: false,
-            error: 'Family name already exists'
+            error: 'Nome da família já existe'
         };
     }
 
     const sanitizedData = sanitizeMemberData(memberData);
     const gearscore = calculateGearscore(sanitizedData.ap, sanitizedData.awakenedAp, sanitizedData.dp);
     const newMember = {
-        id: getNextId(),
+        id: getNextId(members),
         ...sanitizedData,
         gearscore,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
 
     members.push(newMember);
+    saveMembers(members);
 
     return {
         success: true,
@@ -193,65 +194,81 @@ export function createMember(memberData) {
 }
 
 /**
+ * Validate update operation
+ * @param {Array} members - Members array
+ * @param {string|number} id - Member ID
+ * @param {object} memberData - Member data
+ * @returns {object} Validation result
+ */
+function validateUpdate(members, id, memberData) {
+    const memberIndex = members.findIndex((member) => member.id === Number(id));
+    if (memberIndex === -1) {
+        return { success: false, error: 'Membro não encontrado' };
+    }
+
+    const validation = validateMember(memberData);
+    if (!validation.isValid) {
+        return { success: false, error: 'Erro de validação', details: validation.errors };
+    }
+
+    const existingMember = members.find((m) => m.id !== Number(id) && m.familyName.toLowerCase() === memberData.familyName.toLowerCase());
+    if (existingMember) {
+        return { success: false, error: 'Nome da família já existe' };
+    }
+
+    return { success: true, memberIndex };
+}
+
+/**
  * Update existing member
- * @param {number} id - Member ID
+ * @param {string|number} id - Member ID
  * @param {object} memberData - Updated member data
  * @returns {object} Result with success flag and data/error
  */
 export function updateMember(id, memberData) {
-    const memberId = Number(id);
-    const memberIndex = members.findIndex((m) => m.id === memberId);
-    if (memberIndex === -1) {
-        return {
-            success: false,
-            error: 'Member not found'
-        };
+    const members = loadMembers();
+    const validation = validateUpdate(members, id, memberData);
+
+    if (!validation.success) {
+        return validation;
     }
-    const validation = validateMember(memberData);
-    if (!validation.isValid) {
-        return {
-            success: false,
-            error: 'Validation failed',
-            details: validation.errors
-        };
-    }
-    const existingMember = members.find((m) => m.id !== memberId && m.familyName.toLowerCase() === memberData.familyName.toLowerCase());
-    if (existingMember) {
-        return {
-            success: false,
-            error: 'Family name already exists'
-        };
-    }
+
     const sanitizedData = sanitizeMemberData(memberData);
     const gearscore = calculateGearscore(sanitizedData.ap, sanitizedData.awakenedAp, sanitizedData.dp);
-    const updatedMember = {
-        ...members[memberIndex],
+
+    members[validation.memberIndex] = {
+        ...members[validation.memberIndex],
         ...sanitizedData,
         gearscore,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
     };
-    members[memberIndex] = updatedMember;
-    return { success: true, data: updatedMember };
+
+    saveMembers(members);
+
+    return {
+        success: true,
+        data: members[validation.memberIndex]
+    };
 }
 
 /**
  * Delete member
- * @param {number} id - Member ID
+ * @param {string|number} id - Member ID
  * @returns {object} Result with success flag and data/error
  */
 export function deleteMember(id) {
-    const memberId = Number(id);
-    const memberIndex = members.findIndex((m) => m.id === memberId);
+    const members = loadMembers();
+    const memberIndex = members.findIndex((member) => member.id === Number(id));
 
     if (memberIndex === -1) {
         return {
             success: false,
-            error: 'Member not found'
+            error: 'Membro não encontrado'
         };
     }
 
-    const deletedMember = members[memberIndex];
-    members.splice(memberIndex, 1);
+    const deletedMember = members.splice(memberIndex, 1)[0];
+    saveMembers(members);
 
     return {
         success: true,
@@ -261,44 +278,75 @@ export function deleteMember(id) {
 
 /**
  * Get members statistics
- * @returns {object} Statistics data
+ * @returns {object} Statistics object
  */
 export function getMembersStats() {
+    const members = loadMembers();
+
     if (members.length === 0) {
         return {
-            total: 0,
-            averageGearscore: 0,
-            highestGearscore: 0,
-            lowestGearscore: 0,
+            totalMembers: 0,
             averageLevel: 0,
+            averageGearscore: 0,
             classDistribution: {},
             profileDistribution: {}
         };
     }
 
-    const gearscores = members.map((m) => m.gearscore);
-    const levels = members.map((m) => m.level);
+    const totalLevel = members.reduce((sum, member) => sum + member.level, 0);
+    const totalGearscore = members.reduce((sum, member) => sum + member.gearscore, 0);
 
-    // Class distribution
     const classDistribution = members.reduce((acc, member) => {
         acc[member.class] = (acc[member.class] || 0) + 1;
         return acc;
     }, {});
 
-    // Profile distribution
     const profileDistribution = members.reduce((acc, member) => {
         acc[member.profile] = (acc[member.profile] || 0) + 1;
         return acc;
     }, {});
 
     return {
-        total: members.length,
-        averageGearscore: Math.round(gearscores.reduce((a, b) => a + b, 0) / members.length),
-        highestGearscore: Math.max(...gearscores),
-        lowestGearscore: Math.min(...gearscores),
-        averageLevel: Math.round(levels.reduce((a, b) => a + b, 0) / members.length),
+        totalMembers: members.length,
+        averageLevel: Math.round(totalLevel / members.length),
+        averageGearscore: Math.round(totalGearscore / members.length),
         classDistribution,
-        profileDistribution,
-        topMember: members.find((m) => m.gearscore === Math.max(...gearscores))
+        profileDistribution
     };
+}
+
+/**
+ * Validate member data for frontend
+ * @param {object} memberData - Member data to validate
+ * @returns {object} Validation result
+ */
+export function validateMemberData(memberData) {
+    const errors = [];
+
+    if (!memberData.familyName?.trim()) errors.push('Nome da família é obrigatório');
+    if (!memberData.characterName?.trim()) errors.push('Nome do personagem é obrigatório');
+    if (!memberData.class?.trim()) errors.push('Classe é obrigatória');
+    if (!memberData.profile?.trim()) errors.push('Perfil é obrigatório');
+
+    if (!AVAILABLE_CLASSES.includes(memberData.class)) {
+        errors.push('Classe deve ser uma das opções disponíveis');
+    }
+
+    if (!AVAILABLE_PROFILES.includes(memberData.profile)) {
+        errors.push('Perfil deve ser uma das opções disponíveis');
+    }
+
+    const level = Number(memberData.level);
+    if (!level || level < 1 || level > 70) errors.push('Level deve estar entre 1 e 70');
+
+    const ap = Number(memberData.ap);
+    if (ap < 0 || ap > 400) errors.push('AP deve estar entre 0 e 400');
+
+    const awakenedAp = Number(memberData.awakenedAp);
+    if (awakenedAp < 0 || awakenedAp > 400) errors.push('AP Despertar deve estar entre 0 e 400');
+
+    const dp = Number(memberData.dp);
+    if (dp < 0 || dp > 600) errors.push('DP deve estar entre 0 e 600');
+
+    return { isValid: errors.length === 0, errors };
 }

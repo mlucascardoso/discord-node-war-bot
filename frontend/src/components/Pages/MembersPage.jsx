@@ -200,9 +200,18 @@ const MembersPage = () => {
             handleCloseDialog();
         } catch (error) {
             console.error('Error saving member:', error);
+            
+            // Extrair mensagens de erro detalhadas se disponíveis
+            let errorMessage = error.message;
+            if (error.details && Array.isArray(error.details)) {
+                errorMessage = error.details.join(', ');
+            } else if (error.message === 'Validation failed' || error.message === 'Erro de validação') {
+                errorMessage = 'Erro de validação nos dados do membro';
+            }
+            
             setSnackbar({ 
                 open: true, 
-                message: `Erro ao salvar membro: ${error.message}`, 
+                message: errorMessage, 
                 severity: 'error' 
             });
         }

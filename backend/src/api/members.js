@@ -1,9 +1,17 @@
 /**
  * Members API - CRUD operations for guild members
- * Handles all member-related operations with file-based persistence
+ * Handles all member-related operations with PostgreSQL database
  */
 
-import { getNextId, loadMembers, saveMembers } from '../utils/dataStore.js';
+import {
+    createMember as dbCreateMember,
+    deleteMember as dbDeleteMember,
+    getAllMembers as dbGetAllMembers,
+    getMemberById as dbGetMemberById,
+    getMembersStats as dbGetMembersStats,
+    updateMember as dbUpdateMember,
+    familyNameExists
+} from '../database/entities/members.js';
 
 export const AVAILABLE_CLASSES = [
     'Warrior',
@@ -42,7 +50,7 @@ export const AVAILABLE_PROFILES = ['Despertar', 'Sucessão'];
  * @param {number} ap - Attack Power
  * @param {number} awakenedAp - Awakened Attack Power
  * @param {number} dp - Defense Power
- * @returns {number} Calculated gearscore
+ * @returns {Promise<number>} Calculated gearscore
  */
 export function calculateGearscore(ap, awakenedAp, dp) {
     return (Number(ap) + Number(awakenedAp)) / 2 + Number(dp);
@@ -51,7 +59,7 @@ export function calculateGearscore(ap, awakenedAp, dp) {
 /**
  * Format number for display
  * @param {number|string} num - Number to format
- * @returns {string} Formatted number
+ * @returns {Promise<string>} Formatted number
  */
 export function formatNumber(num) {
     if (num === undefined || num === null || num === '') {
@@ -63,7 +71,7 @@ export function formatNumber(num) {
 /**
  * Get profile color for UI
  * @param {string} profile - Profile name
- * @returns {string} Color name
+ * @returns {Promise<string>} Color name
  */
 export function getProfileColor(profile) {
     return profile === 'Despertar' ? 'primary' : 'secondary';
@@ -72,7 +80,7 @@ export function getProfileColor(profile) {
 /**
  * Sanitize member data
  * @param {object} memberData - Raw member data
- * @returns {object} Sanitized member data
+ * @returns {Promise<object>} Sanitized member data
  */
 function sanitizeMemberData(memberData) {
     return {
@@ -90,7 +98,7 @@ function sanitizeMemberData(memberData) {
 /**
  * Validate member data
  * @param {object} memberData - Member data to validate
- * @returns {object} Validation result
+ * @returns {Promise<object>} Validation result
  */
 function validateMember(memberData) {
     const errors = [];
@@ -132,29 +140,27 @@ function validateMember(memberData) {
 
 /**
  * Get all members
- * @returns {array} Members list ordered by family name
+ * @returns {Promise<array>} Members list ordered by family name
  */
-export function getAllMembers() {
-    const members = loadMembers();
-    return [...members].sort((a, b) => a.familyName.localeCompare(b.familyName));
+export async function getAllMembers() {
+    return await dbGetAllMembers();
 }
 
 /**
  * Get member by ID
  * @param {string|number} id - Member ID
- * @returns {object|null} Member object or null if not found
+ * @returns {Promise<object|null>} Member object or null if not found
  */
-export function getMemberById(id) {
-    const members = loadMembers();
-    return members.find((member) => member.id === Number(id)) || null;
+export async function getMemberById(id) {
+    return await dbGetMemberById(Number(id));
 }
 
 /**
  * Create new member
  * @param {object} memberData - Member data
- * @returns {object} Result with success flag and data/error
+ * @returns {Promise<object>} Result with success flag and data/error
  */
-export function createMember(memberData) {
+export async function createMember(memberData) {
     const validation = validateMember(memberData);
 
     if (!validation.isValid) {
@@ -165,160 +171,97 @@ export function createMember(memberData) {
         };
     }
 
-    const members = loadMembers();
-    const existingMember = members.find((m) => m.familyName.toLowerCase() === memberData.familyName.toLowerCase());
-    if (existingMember) {
+    const exists = await familyNameExists(memberData.familyName);
+    if (exists) {
         return {
             success: false,
             error: 'Nome da família já existe'
         };
     }
 
-    const sanitizedData = sanitizeMemberData(memberData);
-    const gearscore = calculateGearscore(sanitizedData.ap, sanitizedData.awakenedAp, sanitizedData.dp);
-    const newMember = {
-        id: getNextId(members),
-        ...sanitizedData,
-        gearscore,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
+    try {
+        const sanitizedData = sanitizeMemberData(memberData);
+        const newMember = await dbCreateMember(sanitizedData);
 
-    members.push(newMember);
-    saveMembers(members);
-
-    return {
-        success: true,
-        data: newMember
-    };
-}
-
-/**
- * Validate update operation
- * @param {Array} members - Members array
- * @param {string|number} id - Member ID
- * @param {object} memberData - Member data
- * @returns {object} Validation result
- */
-function validateUpdate(members, id, memberData) {
-    const memberIndex = members.findIndex((member) => member.id === Number(id));
-    if (memberIndex === -1) {
-        return { success: false, error: 'Membro não encontrado' };
+        return {
+            success: true,
+            data: newMember
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
     }
-
-    const validation = validateMember(memberData);
-    if (!validation.isValid) {
-        return { success: false, error: 'Erro de validação', details: validation.errors };
-    }
-
-    const existingMember = members.find((m) => m.id !== Number(id) && m.familyName.toLowerCase() === memberData.familyName.toLowerCase());
-    if (existingMember) {
-        return { success: false, error: 'Nome da família já existe' };
-    }
-
-    return { success: true, memberIndex };
 }
 
 /**
  * Update existing member
  * @param {string|number} id - Member ID
  * @param {object} memberData - Updated member data
- * @returns {object} Result with success flag and data/error
+ * @returns {Promise<object>} Result with success flag and data/error
  */
-export function updateMember(id, memberData) {
-    const members = loadMembers();
-    const validation = validateUpdate(members, id, memberData);
+export async function updateMember(id, memberData) {
+    const validation = validateMember(memberData);
 
-    if (!validation.success) {
-        return validation;
+    if (!validation.isValid) {
+        return {
+            success: false,
+            error: 'Erro de validação',
+            details: validation.errors
+        };
     }
 
-    const sanitizedData = sanitizeMemberData(memberData);
-    const gearscore = calculateGearscore(sanitizedData.ap, sanitizedData.awakenedAp, sanitizedData.dp);
+    const exists = await familyNameExists(memberData.familyName, Number(id));
+    if (exists) {
+        return { success: false, error: 'Nome da família já existe' };
+    }
 
-    members[validation.memberIndex] = {
-        ...members[validation.memberIndex],
-        ...sanitizedData,
-        gearscore,
-        updatedAt: new Date().toISOString()
-    };
-
-    saveMembers(members);
-
-    return {
-        success: true,
-        data: members[validation.memberIndex]
-    };
+    try {
+        const sanitizedData = sanitizeMemberData(memberData);
+        const updatedMember = await dbUpdateMember(Number(id), sanitizedData);
+        return { success: true, data: updatedMember };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
+    }
 }
 
 /**
  * Delete member
  * @param {string|number} id - Member ID
- * @returns {object} Result with success flag and data/error
+ * @returns {Promise<object>} Result with success flag and data/error
  */
-export function deleteMember(id) {
-    const members = loadMembers();
-    const memberIndex = members.findIndex((member) => member.id === Number(id));
+export async function deleteMember(id) {
+    try {
+        const deletedMember = await dbDeleteMember(Number(id));
 
-    if (memberIndex === -1) {
+        return {
+            success: true,
+            data: deletedMember
+        };
+    } catch (error) {
         return {
             success: false,
-            error: 'Membro não encontrado'
+            error: error.message
         };
     }
-
-    const deletedMember = members.splice(memberIndex, 1)[0];
-    saveMembers(members);
-
-    return {
-        success: true,
-        data: deletedMember
-    };
 }
 
 /**
  * Get members statistics
- * @returns {object} Statistics object
+ * @returns {Promise<object>} Statistics object
  */
-export function getMembersStats() {
-    const members = loadMembers();
-
-    if (members.length === 0) {
-        return {
-            totalMembers: 0,
-            averageLevel: 0,
-            averageGearscore: 0,
-            classDistribution: {},
-            profileDistribution: {}
-        };
-    }
-
-    const totalLevel = members.reduce((sum, member) => sum + member.level, 0);
-    const totalGearscore = members.reduce((sum, member) => sum + member.gearscore, 0);
-
-    const classDistribution = members.reduce((acc, member) => {
-        acc[member.class] = (acc[member.class] || 0) + 1;
-        return acc;
-    }, {});
-
-    const profileDistribution = members.reduce((acc, member) => {
-        acc[member.profile] = (acc[member.profile] || 0) + 1;
-        return acc;
-    }, {});
-
-    return {
-        totalMembers: members.length,
-        averageLevel: Math.round(totalLevel / members.length),
-        averageGearscore: Math.round(totalGearscore / members.length),
-        classDistribution,
-        profileDistribution
-    };
+export async function getMembersStats() {
+    return await dbGetMembersStats();
 }
 
 /**
  * Validate member data for frontend
  * @param {object} memberData - Member data to validate
- * @returns {object} Validation result
+ * @returns {Promise<object>} Validation result
  */
 export function validateMemberData(memberData) {
     const errors = [];

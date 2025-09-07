@@ -26,9 +26,9 @@ async function ensureBotInitialized(req, res, next) {
 }
 
 // Members API Routes
-app.get('/api/members', (req, res) => {
+app.get('/api/members', async (req, res) => {
     try {
-        const members = getAllMembers();
+        const members = await getAllMembers();
         res.json(members);
     } catch (error) {
         console.error('Error getting members:', error);
@@ -36,9 +36,9 @@ app.get('/api/members', (req, res) => {
     }
 });
 
-app.get('/api/members/stats', (req, res) => {
+app.get('/api/members/stats', async (req, res) => {
     try {
-        const stats = getMembersStats();
+        const stats = await getMembersStats();
         res.json(stats);
     } catch (error) {
         console.error('Error getting members stats:', error);
@@ -46,10 +46,10 @@ app.get('/api/members/stats', (req, res) => {
     }
 });
 
-app.get('/api/members/:id', (req, res) => {
+app.get('/api/members/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const member = getMemberById(id);
+        const member = await getMemberById(id);
 
         if (!member) {
             return res.status(404).json({ error: 'Member not found' });
@@ -62,9 +62,9 @@ app.get('/api/members/:id', (req, res) => {
     }
 });
 
-app.post('/api/members/create', (req, res) => {
+app.post('/api/members/create', async (req, res) => {
     try {
-        const result = createMember(req.body);
+        const result = await createMember(req.body);
 
         if (result.success) {
             res.status(201).json(result.data);
@@ -80,15 +80,15 @@ app.post('/api/members/create', (req, res) => {
     }
 });
 
-app.put('/api/members/:id', (req, res) => {
+app.put('/api/members/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = updateMember(id, req.body);
+        const result = await updateMember(id, req.body);
 
         if (result.success) {
             res.json(result.data);
         } else {
-            const statusCode = result.error === 'Member not found' ? 404 : 400;
+            const statusCode = result.error === 'Membro não encontrado' ? 404 : 400;
             res.status(statusCode).json({
                 error: result.error,
                 details: result.details
@@ -100,10 +100,10 @@ app.put('/api/members/:id', (req, res) => {
     }
 });
 
-app.delete('/api/members/:id', (req, res) => {
+app.delete('/api/members/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = deleteMember(id);
+        const result = await deleteMember(id);
 
         if (result.success) {
             res.json({ message: 'Member deleted successfully', data: result.data });

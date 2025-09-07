@@ -2,9 +2,7 @@
     "buildCommand": "cd frontend && yarn install && VITE_API_URL='' yarn build",
     "outputDirectory": "frontend/dist",
     "functions": {
-        "backend/api/*.js": {
-            "runtime": "@vercel/node@3"
-        }
+        "backend/api/*.js": {}
     },
     "rewrites": [
         {

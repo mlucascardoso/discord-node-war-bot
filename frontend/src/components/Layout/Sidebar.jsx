@@ -35,17 +35,21 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus }) => {
             {/* Logo da Guilda */}
             <Box 
                 sx={{ 
-                    p: 3, 
+                    height: 64, // Mesma altura do Toolbar
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    px: 3,
                     background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
                     color: '#FFFFFF',
-                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
-                    textAlign: 'center'
+                    borderBottom: '1px solid rgba(139, 92, 246, 0.2)'
                 }}
             >
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
                     👻 BANSHEE
                 </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, fontStyle: 'italic' }}>
+                <Typography variant="caption" sx={{ opacity: 0.9, fontStyle: 'italic', lineHeight: 1 }}>
                     Guilda Mística
                 </Typography>
             </Box>

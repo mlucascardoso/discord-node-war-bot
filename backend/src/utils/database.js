@@ -11,26 +11,11 @@ import { sql } from '@vercel/postgres';
  */
 export async function loadMembers() {
     try {
-        console.log('📖 [DEBUG] Loading members from PostgreSQL...');
-
         const result = await sql`
-            SELECT 
-                id,
-                family_name,
-                character_name,
-                class,
-                level,
-                ap,
-                awakened_ap,
-                dp,
-                profile,
-                gearscore,
-                created_at,
-                updated_at
+            SELECT id, family_name, character_name, class, level, ap, awakened_ap, dp, profile, gearscore, created_at, updated_at
             FROM members 
             ORDER BY family_name ASC
         `;
-
         const members = result.rows.map((row) => ({
             id: row.id,
             familyName: row.family_name,
@@ -45,11 +30,8 @@ export async function loadMembers() {
             createdAt: row.created_at,
             updatedAt: row.updated_at
         }));
-
-        console.log(`✅ [DEBUG] Loaded ${members.length} members from database`);
         return members;
     } catch (error) {
-        console.error('❌ [DEBUG] Error loading members from database:', error);
         throw new Error(`Failed to load members: ${error.message}`);
     }
 }
@@ -61,8 +43,6 @@ export async function loadMembers() {
  */
 export async function saveMember(memberData) {
     try {
-        console.log('💾 [DEBUG] Saving member to PostgreSQL:', memberData.familyName);
-
         const result = await sql`
             INSERT INTO members (
                 family_name, character_name, class, level, 
@@ -98,11 +78,8 @@ export async function saveMember(memberData) {
             createdAt: row.created_at,
             updatedAt: row.updated_at
         };
-
-        console.log('✅ [DEBUG] Member saved successfully:', member.id);
         return member;
     } catch (error) {
-        console.error('❌ [DEBUG] Error saving member to database:', error);
         throw new Error(`Failed to save member: ${error.message}`);
     }
 }
@@ -115,8 +92,6 @@ export async function saveMember(memberData) {
  */
 export async function updateMember(id, memberData) {
     try {
-        console.log('🔄 [DEBUG] Updating member in PostgreSQL:', id);
-
         const result = await sql`
             UPDATE members SET
                 family_name = ${memberData.familyName},
@@ -138,7 +113,6 @@ export async function updateMember(id, memberData) {
         if (result.rows.length === 0) {
             throw new Error('Member not found');
         }
-
         const row = result.rows[0];
         const member = {
             id: row.id,
@@ -154,11 +128,8 @@ export async function updateMember(id, memberData) {
             createdAt: row.created_at,
             updatedAt: row.updated_at
         };
-
-        console.log('✅ [DEBUG] Member updated successfully:', member.id);
         return member;
     } catch (error) {
-        console.error('❌ [DEBUG] Error updating member in database:', error);
         throw new Error(`Failed to update member: ${error.message}`);
     }
 }
@@ -170,8 +141,6 @@ export async function updateMember(id, memberData) {
  */
 export async function deleteMember(id) {
     try {
-        console.log('🗑️ [DEBUG] Deleting member from PostgreSQL:', id);
-
         const result = await sql`
             DELETE FROM members 
             WHERE id = ${id}
@@ -180,7 +149,6 @@ export async function deleteMember(id) {
                 ap, awakened_ap, dp, profile, gearscore,
                 created_at, updated_at
         `;
-
         if (result.rows.length === 0) {
             throw new Error('Member not found');
         }
@@ -200,11 +168,8 @@ export async function deleteMember(id) {
             createdAt: row.created_at,
             updatedAt: row.updated_at
         };
-
-        console.log('✅ [DEBUG] Member deleted successfully:', member.id);
         return member;
     } catch (error) {
-        console.error('❌ [DEBUG] Error deleting member from database:', error);
         throw new Error(`Failed to delete member: ${error.message}`);
     }
 }
@@ -216,8 +181,6 @@ export async function deleteMember(id) {
  */
 export async function getMemberById(id) {
     try {
-        console.log('🔍 [DEBUG] Getting member by ID from PostgreSQL:', id);
-
         const result = await sql`
             SELECT 
                 id, family_name, character_name, class, level,
@@ -246,11 +209,8 @@ export async function getMemberById(id) {
             createdAt: row.created_at,
             updatedAt: row.updated_at
         };
-
-        console.log('✅ [DEBUG] Member found:', member.id);
         return member;
     } catch (error) {
-        console.error('❌ [DEBUG] Error getting member by ID from database:', error);
         throw new Error(`Failed to get member: ${error.message}`);
     }
 }
@@ -261,9 +221,6 @@ export async function getMemberById(id) {
  */
 export async function getMembersStats() {
     try {
-        console.log('📊 [DEBUG] Getting members statistics from PostgreSQL...');
-
-        // Get total count and averages
         const statsResult = await sql`
             SELECT 
                 COUNT(*) as total_members,
@@ -271,16 +228,12 @@ export async function getMembersStats() {
                 ROUND(AVG(gearscore)) as average_gearscore
             FROM members
         `;
-
-        // Get class distribution
         const classResult = await sql`
             SELECT class, COUNT(*) as count
             FROM members
             GROUP BY class
             ORDER BY count DESC
         `;
-
-        // Get profile distribution
         const profileResult = await sql`
             SELECT profile, COUNT(*) as count
             FROM members
@@ -292,13 +245,8 @@ export async function getMembersStats() {
         const classDistribution = {};
         const profileDistribution = {};
 
-        classResult.rows.forEach((row) => {
-            classDistribution[row.class] = parseInt(row.count);
-        });
-
-        profileResult.rows.forEach((row) => {
-            profileDistribution[row.profile] = parseInt(row.count);
-        });
+        classResult.rows.forEach((row) => (classDistribution[row.class] = parseInt(row.count)));
+        profileResult.rows.forEach((row) => (profileDistribution[row.profile] = parseInt(row.count)));
 
         const result = {
             totalMembers: parseInt(stats.total_members),
@@ -307,11 +255,8 @@ export async function getMembersStats() {
             classDistribution,
             profileDistribution
         };
-
-        console.log('✅ [DEBUG] Statistics retrieved successfully');
         return result;
     } catch (error) {
-        console.error('❌ [DEBUG] Error getting members statistics from database:', error);
         throw new Error(`Failed to get statistics: ${error.message}`);
     }
 }

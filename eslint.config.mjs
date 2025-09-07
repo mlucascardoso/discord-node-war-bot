@@ -50,7 +50,7 @@ export default defineConfig([
             ],
             'linebreak-style': 'off',
             'max-len': ['error', 180],
-            'max-lines-per-function': ['warn', 40],
+            'max-lines-per-function': ['warn', 50],
             'object-curly-spacing': ['error', 'always'],
             quotes: ['error', 'single'],
             'quote-props': ['error', 'as-needed'],

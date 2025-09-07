@@ -67,6 +67,11 @@ const MembersPage = () => {
         profile: ''
     });
 
+    // Função para calcular gearscore: ((ap + ap desperto) / 2) + dp
+    const calculateGearscore = (ap, awakenedAp, dp) => {
+        return Math.round(((ap + awakenedAp) / 2) + dp);
+    };
+
     // Mock data para exemplo
     useEffect(() => {
         const mockMembers = [
@@ -104,8 +109,15 @@ const MembersPage = () => {
                 profile: 'Despertar'
             }
         ];
-        setMembers(mockMembers);
-        setFilteredMembers(mockMembers);
+
+        // Adicionar gearscore calculado
+        const membersWithGearscore = mockMembers.map(member => ({
+            ...member,
+            gearscore: calculateGearscore(member.ap, member.awakenedAp, member.dp)
+        }));
+
+        setMembers(membersWithGearscore);
+        setFilteredMembers(membersWithGearscore);
     }, []);
 
     // Filtrar membros
@@ -289,6 +301,7 @@ const MembersPage = () => {
                                 <TableCell align="center">AP</TableCell>
                                 <TableCell align="center">AP Despertar</TableCell>
                                 <TableCell align="center">DP</TableCell>
+                                <TableCell align="center">GS</TableCell>
                                 <TableCell align="center">Perfil</TableCell>
                                 <TableCell align="center">Ações</TableCell>
                             </TableRow>
@@ -329,6 +342,11 @@ const MembersPage = () => {
                                         <TableCell align="center">
                                             <Typography variant="body2" color="success.main">
                                                 {formatNumber(member.dp)}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <Typography variant="body2" fontWeight="bold" color="warning.main">
+                                                {formatNumber(member.gearscore)}
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="center">

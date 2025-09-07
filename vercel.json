@@ -1,8 +1,14 @@
 {
     "version": 2,
-    "buildCommand": "cd frontend && yarn install && yarn build",
-    "outputDirectory": "frontend/dist",
     "builds": [
+        {
+            "src": "frontend/package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "buildCommand": "yarn build",
+                "distDir": "dist"
+            }
+        },
         {
             "src": "backend/api/*.js",
             "use": "@vercel/node"
@@ -12,6 +18,10 @@
         {
             "src": "/api/(.*)",
             "dest": "/backend/api/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/frontend/dist/$1"
         }
     ]
 }

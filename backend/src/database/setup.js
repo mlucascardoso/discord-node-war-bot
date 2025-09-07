@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 /**
  * Database setup script
  * Creates tables and initial data for the guild management system

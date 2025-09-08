@@ -32,29 +32,41 @@ const handleNodeWarParticipate = async (interaction) => {
         return;
     }
 
-    await interaction.deferReply({ ephemeral: true });
-
-    const userName = interaction.member.displayName || interaction.user.username;
-    const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
-
-    const result = assignUserToNodeWar(userName, userDiscordRoles);
-
-    let responseMessage;
-    if (result.waitlisted) {
-        responseMessage = '⏳ Você foi adicionado à lista de espera!';
-    } else {
-        const roleEmoji = NODE_WAR_CONFIG.roles[result.role].emoji;
-        responseMessage = `${roleEmoji} Você foi atribuído à função: **${result.role}**!`;
-    }
-
-    await interaction.editReply({ content: responseMessage });
-
     try {
-        const updatedMessageData = generateNodeWarMessage();
-        const updatedButtons = createNodeWarButtons();
-        await interaction.message.edit({ ...updatedMessageData, components: updatedButtons });
-    } catch (editError) {
-        console.error('Erro ao atualizar mensagem:', editError);
+        const userName = interaction.member.displayName || interaction.user.username;
+        const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
+
+        const result = assignUserToNodeWar(userName, userDiscordRoles);
+
+        let responseMessage;
+        if (result.waitlisted) {
+            responseMessage = '⏳ Você foi adicionado à lista de espera!';
+        } else {
+            const roleEmoji = NODE_WAR_CONFIG.roles[result.role].emoji;
+            responseMessage = `${roleEmoji} Você foi atribuído à função: **${result.role}**!`;
+        }
+
+        await interaction.reply({ content: responseMessage, ephemeral: true });
+
+        setImmediate(async () => {
+            try {
+                const updatedMessageData = generateNodeWarMessage();
+                const updatedButtons = createNodeWarButtons();
+                await interaction.message.edit({ ...updatedMessageData, components: updatedButtons });
+            } catch (editError) {
+                console.error('Erro ao atualizar mensagem (background):', editError);
+            }
+        });
+    } catch (error) {
+        console.error('Erro em handleNodeWarParticipate:', error);
+
+        try {
+            if (!interaction.replied) {
+                await interaction.reply({ content: '❌ Erro interno. Tente novamente.', ephemeral: true });
+            }
+        } catch (replyError) {
+            console.error('Erro ao responder:', replyError);
+        }
     }
 };
 
@@ -69,11 +81,9 @@ client.on('interactionCreate', async (interaction) => {
         console.error('Erro no handler de interação:', error);
 
         try {
-            if (interaction.deferred) {
-                await interaction.editReply({ content: '💀 Ocorreu um erro! Tente novamente em alguns instantes.' });
-            } else if (!interaction.replied) {
+            if (!interaction.replied && !interaction.deferred) {
                 await interaction.reply({
-                    content: '💀 Ocorreu um erro! Tente novamente em alguns instantes.',
+                    content: '❌ Erro interno. Tente novamente.',
                     ephemeral: true
                 });
             }

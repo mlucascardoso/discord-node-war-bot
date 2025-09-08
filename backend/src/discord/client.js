@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { Client, GatewayIntentBits } from 'discord.js';
 
-import { NODE_WAR_CONFIG, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
+import { NODE_WAR_CONFIG, assignUserToNodeWar, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
 
 dotenv.config();
 
@@ -26,34 +26,7 @@ async function handleSlashCommand(interaction) {
     }
 }
 
-function findUserCurrentRole(userName) {
-    return Object.keys(NODE_WAR_CONFIG.roles).find((roleKey) => {
-        return NODE_WAR_CONFIG.roles[roleKey].members.includes(userName);
-    });
-}
-
-async function processRoleAction(interaction, role, roleName, userName, userCurrentRole) {
-    if (userCurrentRole === roleName) {
-        role.members = role.members.filter((member) => member !== userName);
-        await interaction.editReply({ content: `👻 Membro removido da função **${roleName}**! Até a próxima batalha.` });
-    } else {
-        if (userCurrentRole) {
-            NODE_WAR_CONFIG.roles[userCurrentRole].members = NODE_WAR_CONFIG.roles[userCurrentRole].members.filter((member) => member !== userName);
-        }
-
-        if (role.members.length < role.max) {
-            role.members.push(userName);
-            await interaction.editReply({ content: `🔮 Membro adicionado com sucesso! Você foi aceito na função **${role.emoji} ${roleName}**!` });
-        } else {
-            if (!role.waitlist.includes(userName)) {
-                role.waitlist.push(userName);
-            }
-            await interaction.editReply({ content: `🌙 Função **${roleName}** lotada! Membro adicionado à lista de espera.` });
-        }
-    }
-}
-
-async function handleNodeWarButton(interaction) {
+const handleNodeWarParticipate = async (interaction) => {
     if (interaction.replied || interaction.deferred) {
         console.warn('Interação já foi respondida ou deferida');
         return;
@@ -61,18 +34,20 @@ async function handleNodeWarButton(interaction) {
 
     await interaction.deferReply({ ephemeral: true });
 
-    const roleName = interaction.customId.replace('nodewar_', '').toUpperCase();
     const userName = interaction.member.displayName || interaction.user.username;
-    const role = NODE_WAR_CONFIG.roles[roleName];
+    const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
 
-    if (!role) {
-        console.error(`Role não encontrado: ${roleName}. Roles disponíveis:`, Object.keys(NODE_WAR_CONFIG.roles));
-        await interaction.editReply({ content: '💀 Função não encontrada!' });
-        return;
+    const result = assignUserToNodeWar(userName, userDiscordRoles);
+
+    let responseMessage;
+    if (result.waitlisted) {
+        responseMessage = '⏳ Você foi adicionado à lista de espera!';
+    } else {
+        const roleEmoji = NODE_WAR_CONFIG.roles[result.role].emoji;
+        responseMessage = `${roleEmoji} Você foi atribuído à função: **${result.role}**!`;
     }
 
-    const userCurrentRole = findUserCurrentRole(userName);
-    await processRoleAction(interaction, role, roleName, userName, userCurrentRole);
+    await interaction.editReply({ content: responseMessage });
 
     try {
         const updatedMessageData = generateNodeWarMessage();
@@ -81,14 +56,14 @@ async function handleNodeWarButton(interaction) {
     } catch (editError) {
         console.error('Erro ao atualizar mensagem:', editError);
     }
-}
+};
 
 client.on('interactionCreate', async (interaction) => {
     try {
         if (interaction.isChatInputCommand()) {
             await handleSlashCommand(interaction);
-        } else if (interaction.isButton() && interaction.customId.startsWith('nodewar_')) {
-            await handleNodeWarButton(interaction);
+        } else if (interaction.isButton() && interaction.customId === 'nodewar_participate') {
+            await handleNodeWarParticipate(interaction);
         }
     } catch (error) {
         console.error('Erro no handler de interação:', error);

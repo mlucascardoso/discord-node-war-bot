@@ -4,20 +4,65 @@ export const NODE_WAR_CONFIG = {
     totalVagas: 40,
     tier: 2,
     roles: {
-        BOMBER: { emoji: '💥', max: 4, members: [], waitlist: [] },
-        RANGED: { emoji: '🏹', max: 4, members: [], waitlist: [] },
-        PA: { emoji: '🧙‍♂️', max: 3, members: [], waitlist: [] },
-        DEFESA: { emoji: '🔥', max: 3, members: [], waitlist: [] },
-        FRONTLINE: { emoji: '⚔️', max: 6, members: [], waitlist: [] },
-        'DO-SA': { emoji: '🚬', max: 4, members: [], waitlist: [] },
-        BLOCO: { emoji: '🧱', max: 3, members: [], waitlist: [] },
+        CALLER: { emoji: '🎙️', max: 1, members: [], waitlist: [] },
+        FLAME: { emoji: '🔥', max: 3, members: [], waitlist: [] },
+        HWACHA: { emoji: '🏹', max: 4, members: [], waitlist: [] },
         ELEFANTE: { emoji: '🐘', max: 1, members: [], waitlist: [] },
-        STRIKER: { emoji: '🥊', max: 4, members: [], waitlist: [] },
+        BANDEIRA: { emoji: '🚩', max: 1, members: [], waitlist: [] },
+        BOMBER: { emoji: '💥', max: 0, members: [], waitlist: [] },
         SHAI: { emoji: '🥁', max: 4, members: [], waitlist: [] },
-        CALLER: { emoji: '🎙️', max: 3, members: [], waitlist: [] },
-        BANDEIRA: { emoji: '🚩', max: 1, members: [], waitlist: [] }
+        RANGED: { emoji: '🏹', max: 4, members: [], waitlist: [] },
+        FRONTLINE: { emoji: '⚔️', max: 22, members: [], waitlist: [] }
     }
 };
+
+const ROLE_PRIORITY_MAPPING = [
+    {
+        nodeWarRole: 'CALLER',
+        discordRoles: ['CALLER'],
+        condition: (userRoles) => userRoles.some((role) => role === 'CALLER')
+    },
+    {
+        nodeWarRole: 'FLAME',
+        discordRoles: ['FLAME'],
+        condition: (userRoles) => userRoles.some((role) => role === 'FLAME')
+    },
+    {
+        nodeWarRole: 'HWACHA',
+        discordRoles: ['HWACHA'],
+        condition: (userRoles) => userRoles.some((role) => role === 'HWACHA')
+    },
+    {
+        nodeWarRole: 'ELEFANTE',
+        discordRoles: ['ELEFANTE'],
+        condition: (userRoles) => userRoles.some((role) => role === 'ELEFANTE')
+    },
+    {
+        nodeWarRole: 'BANDEIRA',
+        discordRoles: ['BANDEIRA'],
+        condition: (userRoles) => userRoles.some((role) => role === 'BANDEIRA')
+    },
+    {
+        nodeWarRole: 'BOMBER',
+        discordRoles: ['BOMBER'],
+        condition: (userRoles) => userRoles.some((role) => role === 'BOMBER')
+    },
+    {
+        nodeWarRole: 'SHAI',
+        discordRoles: ['SHAI'],
+        condition: (userRoles) => userRoles.some((role) => role === 'SHAI')
+    },
+    {
+        nodeWarRole: 'RANGED',
+        discordRoles: ['RANGED', 'ARQUEIRO', 'CAÇADORA'],
+        condition: (userRoles) => userRoles.includes('RANGED') && (userRoles.includes('ARQUEIRO') || userRoles.includes('CAÇADORA'))
+    },
+    {
+        nodeWarRole: 'FRONTLINE',
+        discordRoles: ['FRONTLINE'],
+        condition: () => true
+    }
+];
 
 const getNextNodeWarDate = () => {
     const now = new Date();
@@ -43,6 +88,64 @@ const formatDateToPT = (date) => {
     const year = date.getFullYear();
 
     return `${dayName}, ${day} de ${month} de ${year}`;
+};
+
+const hasRoleSpace = (roleName) => {
+    const role = NODE_WAR_CONFIG.roles[roleName];
+    return role && role.members.length < role.max;
+};
+
+const determineUserRole = (userDiscordRoles) => {
+    const userRoleNames = userDiscordRoles.map((role) => role.name.toUpperCase());
+
+    const eligibleRole = ROLE_PRIORITY_MAPPING.find((mapping) => mapping.condition(userRoleNames) && hasRoleSpace(mapping.nodeWarRole));
+
+    return eligibleRole ? eligibleRole.nodeWarRole : null;
+};
+
+const addUserToRole = (userName, roleName) => {
+    if (!roleName || !NODE_WAR_CONFIG.roles[roleName]) {
+        return false;
+    }
+
+    const role = NODE_WAR_CONFIG.roles[roleName];
+
+    if (!role.members.includes(userName)) {
+        role.members.push(userName);
+        return true;
+    }
+
+    return false;
+};
+
+const addUserToWaitlist = (userName) => {
+    const waitlistRole = NODE_WAR_CONFIG.roles.FRONTLINE;
+    if (!waitlistRole.waitlist.includes(userName)) {
+        waitlistRole.waitlist.push(userName);
+        return true;
+    }
+    return false;
+};
+
+const removeUserFromAllRoles = (userName) => {
+    Object.values(NODE_WAR_CONFIG.roles).forEach((role) => {
+        role.members = role.members.filter((member) => member !== userName);
+        role.waitlist = role.waitlist.filter((member) => member !== userName);
+    });
+};
+
+export const assignUserToNodeWar = (userName, userDiscordRoles) => {
+    removeUserFromAllRoles(userName);
+
+    const assignedRole = determineUserRole(userDiscordRoles);
+
+    if (assignedRole) {
+        addUserToRole(userName, assignedRole);
+        return { success: true, role: assignedRole, waitlisted: false };
+    }
+
+    addUserToWaitlist(userName);
+    return { success: true, role: null, waitlisted: true };
 };
 
 /**
@@ -117,21 +220,9 @@ export const generateNodeWarMessage = () => {
 };
 
 export const createNodeWarButtons = () => {
-    const rows = [];
-    const roleKeys = Object.keys(NODE_WAR_CONFIG.roles);
+    const row = new ActionRowBuilder();
+    const participateButton = new ButtonBuilder().setCustomId('nodewar_participate').setLabel('Participar').setStyle(ButtonStyle.Primary);
 
-    for (let i = 0; i < roleKeys.length; i += 5) {
-        const row = new ActionRowBuilder();
-        const slice = roleKeys.slice(i, i + 5);
-
-        slice.forEach((roleName) => {
-            const role = NODE_WAR_CONFIG.roles[roleName];
-            const button = new ButtonBuilder().setCustomId(`nodewar_${roleName.toLowerCase()}`).setLabel(`${role.emoji} ${roleName}`).setStyle(ButtonStyle.Primary);
-            row.addComponents(button);
-        });
-
-        rows.push(row);
-    }
-
-    return rows;
+    row.addComponents(participateButton);
+    return [row];
 };

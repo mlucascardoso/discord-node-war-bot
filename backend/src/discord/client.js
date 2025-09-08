@@ -26,46 +26,54 @@ async function handleSlashCommand(interaction) {
     }
 }
 
+const updateNodeWarMessage = async (interaction) => {
+    try {
+        const updatedMessageData = generateNodeWarMessage();
+        const updatedButtons = createNodeWarButtons();
+
+        await Promise.race([
+            interaction.message.edit({ ...updatedMessageData, components: updatedButtons }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Edit timeout')), 3000))
+        ]);
+    } catch (editError) {
+        console.error('Erro ao atualizar mensagem:', editError.message);
+    }
+};
+
 const handleNodeWarParticipate = async (interaction) => {
     if (interaction.replied || interaction.deferred) {
         console.warn('Interação já foi respondida ou deferida');
         return;
     }
 
+    const userName = interaction.member.displayName || interaction.user.username;
+    const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
+    const result = assignUserToNodeWar(userName, userDiscordRoles);
+
+    let responseMessage;
+    if (result.waitlisted) {
+        responseMessage = '⏳ Você foi adicionado à lista de espera!';
+    } else {
+        const roleEmoji = NODE_WAR_CONFIG.roles[result.role].emoji;
+        responseMessage = `${roleEmoji} Você foi atribuído à função: **${result.role}**!`;
+    }
+
     try {
-        const userName = interaction.member.displayName || interaction.user.username;
-        const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
+        await Promise.race([
+            interaction.reply({ content: responseMessage, ephemeral: true }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Reply timeout')), 2000))
+        ]);
 
-        const result = assignUserToNodeWar(userName, userDiscordRoles);
-
-        let responseMessage;
-        if (result.waitlisted) {
-            responseMessage = '⏳ Você foi adicionado à lista de espera!';
-        } else {
-            const roleEmoji = NODE_WAR_CONFIG.roles[result.role].emoji;
-            responseMessage = `${roleEmoji} Você foi atribuído à função: **${result.role}**!`;
-        }
-
-        await interaction.reply({ content: responseMessage, ephemeral: true });
-
-        setImmediate(async () => {
-            try {
-                const updatedMessageData = generateNodeWarMessage();
-                const updatedButtons = createNodeWarButtons();
-                await interaction.message.edit({ ...updatedMessageData, components: updatedButtons });
-            } catch (editError) {
-                console.error('Erro ao atualizar mensagem (background):', editError);
-            }
-        });
+        process.nextTick(() => updateNodeWarMessage(interaction));
     } catch (error) {
-        console.error('Erro em handleNodeWarParticipate:', error);
+        console.error('Erro ao responder:', error.message);
 
-        try {
-            if (!interaction.replied) {
-                await interaction.reply({ content: '❌ Erro interno. Tente novamente.', ephemeral: true });
+        if (!interaction.replied) {
+            try {
+                await interaction.reply({ content: '❌ Erro interno.', ephemeral: true });
+            } catch (fallbackError) {
+                console.error('Erro no fallback:', fallbackError.message);
             }
-        } catch (replyError) {
-            console.error('Erro ao responder:', replyError);
         }
     }
 };

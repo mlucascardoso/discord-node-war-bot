@@ -45,11 +45,14 @@ const formatDateToPT = (date) => {
     return `${dayName}, ${day} de ${month} de ${year}`;
 };
 
-export const generateNodeWarMessage = () => {
+/**
+ * Cria um embed para a node war
+ * @returns {EmbedBuilder} Embed para a node war
+ */
+const createNodeWarEmbed = () => {
     const nextDate = getNextNodeWarDate();
     const formattedDate = formatDateToPT(nextDate);
 
-    // Criar embed principal
     const embed = new EmbedBuilder()
         .setTitle('NODE WAR')
         .setDescription(
@@ -64,17 +67,18 @@ export const generateNodeWarMessage = () => {
         )
         .setColor('#ff6b35');
 
-    // Organizar funções em 3 colunas usando campos inline
+    return embed;
+};
+
+// eslint-disable-next-line max-lines-per-function
+export const generateNodeWarMessage = () => {
+    const embed = createNodeWarEmbed();
     const roleKeys = Object.keys(NODE_WAR_CONFIG.roles);
     const columns = [[], [], []];
 
-    roleKeys.forEach((role, index) => {
-        columns[index % 3].push(role);
-    });
+    roleKeys.forEach((role, index) => columns[index % 3].push(role));
 
-    // Adicionar campos para cada função (3 por linha com inline)
     const maxRows = Math.max(...columns.map((col) => col.length));
-
     for (let row = 0; row < maxRows; row++) {
         for (let col = 0; col < 3; col++) {
             if (columns[col][row]) {
@@ -84,7 +88,6 @@ export const generateNodeWarMessage = () => {
                 const maxCount = role.max;
 
                 let fieldValue = `🔒@${role.emoji} ${roleName}\n`;
-
                 if (role.members.length > 0) {
                     role.members.forEach((member) => {
                         fieldValue += `👻 ${member}\n`;
@@ -92,14 +95,12 @@ export const generateNodeWarMessage = () => {
                 } else {
                     fieldValue += '-\n';
                 }
-
                 embed.addFields({
                     name: `${role.emoji} ${roleName} (${currentCount}/${maxCount})`,
                     value: fieldValue,
                     inline: true
                 });
             } else {
-                // Campo vazio para manter alinhamento
                 embed.addFields({
                     name: '\u200b',
                     value: '\u200b',
@@ -109,26 +110,16 @@ export const generateNodeWarMessage = () => {
         }
     }
 
-    // Adicionar waitlist se houver pessoas esperando
     const waitlistMembers = [];
     Object.keys(NODE_WAR_CONFIG.roles).forEach((roleName) => {
         const role = NODE_WAR_CONFIG.roles[roleName];
-        role.waitlist.forEach((member) => {
-            waitlistMembers.push(`${role.emoji} ${member}`);
-        });
+        role.waitlist.forEach((member) => waitlistMembers.push(`${role.emoji} ${member}`));
     });
 
     if (waitlistMembers.length > 0) {
         let waitlistText = '';
-        waitlistMembers.forEach((member) => {
-            waitlistText += `⏳ ${member}\n`;
-        });
-
-        embed.addFields({
-            name: '**Waitlist**',
-            value: waitlistText,
-            inline: false
-        });
+        waitlistMembers.forEach((member) => (waitlistText += `⏳ ${member}\n`));
+        embed.addFields({ name: '**Waitlist**', value: waitlistText, inline: false });
     }
 
     return { embeds: [embed] };
@@ -138,14 +129,14 @@ export const createNodeWarButtons = () => {
     const rows = [];
     const roleKeys = Object.keys(NODE_WAR_CONFIG.roles);
 
-    // Criar botões em grupos de 5 (máximo por linha)
     for (let i = 0; i < roleKeys.length; i += 5) {
         const row = new ActionRowBuilder();
         const slice = roleKeys.slice(i, i + 5);
 
         slice.forEach((roleName) => {
             const role = NODE_WAR_CONFIG.roles[roleName];
-            row.addComponents(new ButtonBuilder().setCustomId(`nodewar_${roleName.toLowerCase()}`).setLabel(`${role.emoji} ${roleName}`).setStyle(ButtonStyle.Secondary));
+            const button = new ButtonBuilder().setCustomId(`nodewar_${roleName.toLowerCase()}`).setLabel(`${role.emoji} ${roleName}`).setStyle(ButtonStyle.Secondary);
+            row.addComponents(button);
         });
 
         rows.push(row);

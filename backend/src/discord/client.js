@@ -11,7 +11,6 @@ const client = new Client({
 
 client.once('clientReady', async () => {
     await client.application.commands.create({ name: 'nodewar', description: '🔮 Invoca a agenda da Batalha Mística da Banshee' });
-    await client.application.commands.create({ name: 'banshee', description: '👻 Informações sobre a Guilda Banshee' });
     console.log('⚔️ Comandos registrados com sucesso!');
 });
 
@@ -19,7 +18,6 @@ client.on('messageCreate', (message) => {
     if (message.author.bot) return;
 });
 
-// Handler para comandos slash
 async function handleSlashCommand(interaction) {
     if (interaction.commandName === 'nodewar') {
         const messageData = generateNodeWarMessage();
@@ -28,14 +26,12 @@ async function handleSlashCommand(interaction) {
     }
 }
 
-// Função auxiliar para encontrar role atual do usuário
 function findUserCurrentRole(userName) {
     return Object.keys(NODE_WAR_CONFIG.roles).find((roleKey) => {
         return NODE_WAR_CONFIG.roles[roleKey].members.includes(userName);
     });
 }
 
-// Função auxiliar para processar inscrição/remoção de role
 async function processRoleAction(interaction, role, roleName, userName, userCurrentRole) {
     if (userCurrentRole === roleName) {
         role.members = role.members.filter((member) => member !== userName);
@@ -57,7 +53,6 @@ async function processRoleAction(interaction, role, roleName, userName, userCurr
     }
 }
 
-// Handler para botões da Node War
 async function handleNodeWarButton(interaction) {
     if (interaction.replied || interaction.deferred) {
         console.warn('Interação já foi respondida ou deferida');
@@ -67,7 +62,6 @@ async function handleNodeWarButton(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     const roleName = interaction.customId.replace('nodewar_', '').toUpperCase();
-    console.log(`Botão clicado: ${interaction.customId}, Role processado: ${roleName}`);
     const userName = interaction.user.displayName || interaction.user.username;
     const role = NODE_WAR_CONFIG.roles[roleName];
 
@@ -89,7 +83,6 @@ async function handleNodeWarButton(interaction) {
     }
 }
 
-// Handler para interações (comandos e botões)
 client.on('interactionCreate', async (interaction) => {
     try {
         if (interaction.isChatInputCommand()) {
@@ -100,7 +93,6 @@ client.on('interactionCreate', async (interaction) => {
     } catch (error) {
         console.error('Erro no handler de interação:', error);
 
-        // Tentar responder com uma mensagem de erro
         try {
             if (interaction.deferred) {
                 await interaction.editReply({ content: '💀 Ocorreu um erro! Tente novamente em alguns instantes.' });

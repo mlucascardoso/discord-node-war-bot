@@ -54,23 +54,26 @@ const createNodeWarEmbed = () => {
     const formattedDate = formatDateToPT(nextDate);
 
     const embed = new EmbedBuilder()
-        .setTitle('NODE WAR')
+        .setTitle('👻 NODE WAR BANSHEE')
         .setDescription(
-            `🏰 **NODE TIER ${NODE_WAR_CONFIG.tier} — ${NODE_WAR_CONFIG.totalVagas} VAGAS**\n\n` +
-                '✅ **CANAIS PARA CONFIRMAR SUA PARTICIPAÇÃO**\n' +
-                '(Mediah 1 / Valencia 1)\n\n' +
-                '⏰ O servidor onde acontecerá a guerra será anunciado às 20:45\n' +
-                '➡️ Todos os membros devem estar presentes no Discord até esse horário.\n' +
-                '🔁 Atenção: A partir das 20:00 está liberado o roubo de vaga.\n\n' +
-                '**Time**\n' +
-                `⏰ **Data/hora da node war:** ${formattedDate} 21:00 - 22:00\n`
+            `
+                🏰 **NODE TIER ${NODE_WAR_CONFIG.tier} — ${NODE_WAR_CONFIG.totalVagas} VAGAS**
+
+                🔮 **CANAIS PARA CONFIRMAR SUA PARTICIPAÇÃO**
+                *(Mediah 1 / Valencia 1)*
+
+                ⏰ **Servidor anunciado às 20:45**
+
+                👻 Todos os membros devem estar presentes no Discord
+                ⚡ **Atenção:** A partir das 20:00 está liberado o roubo de vaga
+                ⏰ **${formattedDate}** • 21:00 - 22:00
+            `
         )
-        .setColor('#ff6b35');
+        .setColor('#8B5CF6');
 
     return embed;
 };
 
-// eslint-disable-next-line max-lines-per-function
 export const generateNodeWarMessage = () => {
     const embed = createNodeWarEmbed();
     const roleKeys = Object.keys(NODE_WAR_CONFIG.roles);
@@ -87,25 +90,13 @@ export const generateNodeWarMessage = () => {
                 const currentCount = role.members.length;
                 const maxCount = role.max;
 
-                let fieldValue = `🔒@${role.emoji} ${roleName}\n`;
+                let fieldValue = '';
                 if (role.members.length > 0) {
-                    role.members.forEach((member) => {
-                        fieldValue += `👻 ${member}\n`;
-                    });
-                } else {
-                    fieldValue += '-\n';
+                    role.members.forEach((member) => (fieldValue += `👻 ${member}\n`));
                 }
-                embed.addFields({
-                    name: `${role.emoji} ${roleName} (${currentCount}/${maxCount})`,
-                    value: fieldValue,
-                    inline: true
-                });
+                embed.addFields({ name: `${role.emoji} ${roleName} (${currentCount}/${maxCount})`, value: fieldValue, inline: true });
             } else {
-                embed.addFields({
-                    name: '\u200b',
-                    value: '\u200b',
-                    inline: true
-                });
+                embed.addFields({ name: '\u200b', value: '\u200b', inline: true });
             }
         }
     }
@@ -119,7 +110,7 @@ export const generateNodeWarMessage = () => {
     if (waitlistMembers.length > 0) {
         let waitlistText = '';
         waitlistMembers.forEach((member) => (waitlistText += `⏳ ${member}\n`));
-        embed.addFields({ name: '**Waitlist**', value: waitlistText, inline: false });
+        embed.addFields({ name: '🌙 **Lista de Espera**', value: waitlistText, inline: false });
     }
 
     return { embeds: [embed] };
@@ -135,7 +126,7 @@ export const createNodeWarButtons = () => {
 
         slice.forEach((roleName) => {
             const role = NODE_WAR_CONFIG.roles[roleName];
-            const button = new ButtonBuilder().setCustomId(`nodewar_${roleName.toLowerCase()}`).setLabel(`${role.emoji} ${roleName}`).setStyle(ButtonStyle.Secondary);
+            const button = new ButtonBuilder().setCustomId(`nodewar_${roleName.toLowerCase()}`).setLabel(`${role.emoji} ${roleName}`).setStyle(ButtonStyle.Primary);
             row.addComponents(button);
         });
 

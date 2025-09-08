@@ -26,24 +26,21 @@ async function handleSlashCommand(interaction) {
     }
 }
 
-const updateNodeWarMessage = async (interaction) => {
+const handleNodeWarParticipate = async (interaction) => {
     try {
+        const userName = interaction.member.displayName || interaction.user.username;
+        const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
+
+        assignUserToNodeWar(userName, userDiscordRoles);
+
+        await interaction.deferUpdate();
+
         const updatedMessageData = generateNodeWarMessage();
         const updatedButtons = createNodeWarButtons();
         await interaction.editReply({ ...updatedMessageData, components: updatedButtons });
-    } catch (editError) {
-        console.error('Erro ao atualizar mensagem:', editError.message);
+    } catch (error) {
+        console.error('Erro em handleNodeWarParticipate:', error.code || error.message);
     }
-};
-
-const handleNodeWarParticipate = async (interaction) => {
-    const userName = interaction.member.displayName || interaction.user.username;
-    const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
-
-    assignUserToNodeWar(userName, userDiscordRoles);
-
-    await interaction.deferUpdate();
-    await updateNodeWarMessage(interaction);
 };
 
 client.on('interactionCreate', async (interaction) => {
@@ -51,21 +48,12 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isChatInputCommand()) {
             await handleSlashCommand(interaction);
         } else if (interaction.isButton() && interaction.customId === 'nodewar_participate') {
-            await handleNodeWarParticipate(interaction);
+            handleNodeWarParticipate(interaction).catch((err) => {
+                console.error('Erro silencioso em nodewar:', err.code || err.message);
+            });
         }
     } catch (error) {
-        console.error('Erro no handler de interação:', error);
-
-        try {
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({
-                    content: '❌ Erro interno. Tente novamente.',
-                    ephemeral: true
-                });
-            }
-        } catch (replyError) {
-            console.error('Erro ao responder com mensagem de erro:', replyError);
-        }
+        console.error('Erro no handler principal:', error.code || error.message);
     }
 });
 

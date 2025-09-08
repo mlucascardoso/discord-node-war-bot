@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { Client, GatewayIntentBits } from 'discord.js';
 
-import { NODE_WAR_CONFIG, assignUserToNodeWar, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
+import { assignUserToNodeWar, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
 
 dotenv.config();
 
@@ -30,52 +30,20 @@ const updateNodeWarMessage = async (interaction) => {
     try {
         const updatedMessageData = generateNodeWarMessage();
         const updatedButtons = createNodeWarButtons();
-
-        await Promise.race([
-            interaction.message.edit({ ...updatedMessageData, components: updatedButtons }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Edit timeout')), 3000))
-        ]);
+        await interaction.editReply({ ...updatedMessageData, components: updatedButtons });
     } catch (editError) {
         console.error('Erro ao atualizar mensagem:', editError.message);
     }
 };
 
 const handleNodeWarParticipate = async (interaction) => {
-    if (interaction.replied || interaction.deferred) {
-        console.warn('Interação já foi respondida ou deferida');
-        return;
-    }
-
     const userName = interaction.member.displayName || interaction.user.username;
     const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
-    const result = assignUserToNodeWar(userName, userDiscordRoles);
 
-    let responseMessage;
-    if (result.waitlisted) {
-        responseMessage = '⏳ Você foi adicionado à lista de espera!';
-    } else {
-        const roleEmoji = NODE_WAR_CONFIG.roles[result.role].emoji;
-        responseMessage = `${roleEmoji} Você foi atribuído à função: **${result.role}**!`;
-    }
+    assignUserToNodeWar(userName, userDiscordRoles);
 
-    try {
-        await Promise.race([
-            interaction.reply({ content: responseMessage, ephemeral: true }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Reply timeout')), 2000))
-        ]);
-
-        process.nextTick(() => updateNodeWarMessage(interaction));
-    } catch (error) {
-        console.error('Erro ao responder:', error.message);
-
-        if (!interaction.replied) {
-            try {
-                await interaction.reply({ content: '❌ Erro interno.', ephemeral: true });
-            } catch (fallbackError) {
-                console.error('Erro no fallback:', fallbackError.message);
-            }
-        }
-    }
+    await interaction.deferUpdate();
+    await updateNodeWarMessage(interaction);
 };
 
 client.on('interactionCreate', async (interaction) => {

@@ -27,6 +27,11 @@ async function handleSlashCommand(interaction) {
 }
 
 const handleNodeWarParticipate = async (interaction) => {
+    if (interaction.replied || interaction.deferred) {
+        console.warn('Interação já processada');
+        return;
+    }
+
     const userName = interaction.member.displayName || interaction.user.username;
     const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
 
@@ -35,17 +40,11 @@ const handleNodeWarParticipate = async (interaction) => {
     try {
         await interaction.deferUpdate();
 
-        setImmediate(async () => {
-            try {
-                const updatedMessageData = generateNodeWarMessage();
-                const updatedButtons = createNodeWarButtons();
-                await interaction.editReply({ ...updatedMessageData, components: updatedButtons });
-            } catch (bgError) {
-                console.error('Erro background:', bgError.code || 'NETWORK_ERROR');
-            }
-        });
-    } catch (deferError) {
-        console.error('Erro defer:', deferError.code || 'DEFER_FAILED');
+        const updatedMessageData = generateNodeWarMessage();
+        const updatedButtons = createNodeWarButtons();
+        await interaction.editReply({ ...updatedMessageData, components: updatedButtons });
+    } catch (error) {
+        console.error('Erro nodewar:', error.code || error.message);
     }
 };
 

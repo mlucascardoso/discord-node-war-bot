@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { useCallback, useEffect, useState } from 'react';
 
 export const useApi = () => {
@@ -64,12 +65,10 @@ export const useApi = () => {
         [API_BASE]
     );
 
-    // Auto-fetch status on mount and every 30 seconds
+    // Fetch data on mount only
     useEffect(() => {
         fetchBotStatus();
         fetchChannels();
-        const interval = setInterval(fetchBotStatus, 30000);
-        return () => clearInterval(interval);
     }, [fetchBotStatus, fetchChannels]);
 
     return {

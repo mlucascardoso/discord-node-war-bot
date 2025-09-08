@@ -62,7 +62,7 @@ async function handleNodeWarButton(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     const roleName = interaction.customId.replace('nodewar_', '').toUpperCase();
-    const userName = interaction.user.displayName || interaction.user.username;
+    const userName = interaction.member.displayName || interaction.user.username;
     const role = NODE_WAR_CONFIG.roles[roleName];
 
     if (!role) {

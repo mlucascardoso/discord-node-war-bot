@@ -1,7 +1,7 @@
 import { sql } from '@vercel/postgres';
 
 export const getAllClasses = async () => {
-    const result = await sql`SELECT * FROM classes`;
+    const result = await sql`SELECT * FROM classes order by name asc`;
     return result.rows;
 };
 

@@ -1,7 +1,7 @@
 import { sql } from '@vercel/postgres';
 
 export const getAllMembers = async () => {
-    const result = await sql`SELECT * FROM members`;
+    const result = await sql`SELECT * FROM members order by family_name asc`;
     return result.rows;
 };
 

@@ -56,11 +56,11 @@ const DashboardPage = () => {
 
                 // Mock data para evolução (dados históricos simulados baseados nos membros reais)
                 const mockEvolution = [
-                    { month: 'Jan', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 15 }), {}) },
-                    { month: 'Fev', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 10 }), {}) },
-                    { month: 'Mar', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 5 }), {}) },
-                    { month: 'Abr', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore - 2 }), {}) },
-                    { month: 'Mai', ...membersData.reduce((acc, member) => ({ ...acc, [member.familyName]: member.gearscore }), {}) }
+                    { month: 'Jan', ...membersData.reduce((acc, member) => ({ ...acc, [member.family_name]: member.gearscore - 15 }), {}) },
+                    { month: 'Fev', ...membersData.reduce((acc, member) => ({ ...acc, [member.family_name]: member.gearscore - 10 }), {}) },
+                    { month: 'Mar', ...membersData.reduce((acc, member) => ({ ...acc, [member.family_name]: member.gearscore - 5 }), {}) },
+                    { month: 'Abr', ...membersData.reduce((acc, member) => ({ ...acc, [member.family_name]: member.gearscore - 2 }), {}) },
+                    { month: 'Mai', ...membersData.reduce((acc, member) => ({ ...acc, [member.family_name]: member.gearscore }), {}) }
                 ];
                 setEvolutionData(mockEvolution);
             } catch (err) {
@@ -86,18 +86,17 @@ const DashboardPage = () => {
 
     // Dados para gráfico de barras (média geral)
     const gearscoreData = members.map(member => ({
-        name: member.familyName,
-        character: member.characterName,
-        gearscore: member.gearscore,
-        class: member.class
+        name: member.family_name,
+        gearscore: member.gearscore
     }));
 
     // Cores para os gráficos
     const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
-    // Dados para gráfico de pizza (distribuição por classe)
+    // Dados para gráfico de pizza (distribuição por classe) - usando class_id temporariamente
     const classDistribution = members.reduce((acc, member) => {
-        acc[member.class] = (acc[member.class] || 0) + 1;
+        const className = `Classe ${member.class_id || 'N/A'}`;
+        acc[className] = (acc[className] || 0) + 1;
         return acc;
     }, {});
 
@@ -273,8 +272,8 @@ const DashboardPage = () => {
                                 >
                                     <MenuItem value="all">Todos</MenuItem>
                                     {members.map(member => (
-                                        <MenuItem key={member.id} value={member.familyName}>
-                                            {member.familyName}
+                                        <MenuItem key={member.id} value={member.family_name}>
+                                            {member.family_name}
                                         </MenuItem>
                                     ))}
                                 </Select>
@@ -287,12 +286,12 @@ const DashboardPage = () => {
                                 <YAxis />
                                 <Tooltip />
                                 <Legend />
-                                {(selectedMember === 'all' ? members : members.filter(m => m.familyName === selectedMember))
+                                {(selectedMember === 'all' ? members : members.filter(m => m.family_name === selectedMember))
                                     .map((member, index) => (
                                     <Line
-                                        key={member.familyName}
+                                        key={member.family_name}
                                         type="monotone"
-                                        dataKey={member.familyName}
+                                        dataKey={member.family_name}
                                         stroke={colors[index % colors.length]}
                                         strokeWidth={2}
                                         dot={{ r: 4 }}

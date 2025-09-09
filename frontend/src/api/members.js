@@ -33,7 +33,8 @@ async function handleResponse(response) {
 export async function getAllMembers() {
     try {
         const response = await fetch(`${API_BASE}/members`);
-        return await handleResponse(response);
+        const result = await handleResponse(response);
+        return result.data || result;
     } catch (error) {
         console.error('Error fetching members:', error);
         throw error;
@@ -62,7 +63,7 @@ export async function getMemberById(id) {
  */
 export async function createMember(memberData) {
     try {
-        const response = await fetch(`${API_BASE}/members/create`, {
+        const response = await fetch(`${API_BASE}/members`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -156,11 +157,20 @@ export function formatNumber(num) {
 
 /**
  * Get profile color for Material-UI chips
- * @param {string} profile - Profile type ('Sucessão' or 'Despertar')
+ * @param {string} profile - Profile type ('Sucessão', 'Despertar', or 'Ascensão')
  * @returns {string} Material-UI color name
  */
 export function getProfileColor(profile) {
-    return profile === 'Sucessão' ? 'primary' : 'secondary';
+    switch (profile) {
+        case 'Sucessão':
+            return 'primary';
+        case 'Despertar':
+            return 'secondary';
+        case 'Ascensão':
+            return 'success';
+        default:
+            return 'default';
+    }
 }
 
 /**
@@ -173,9 +183,9 @@ export function validateMemberData(memberData) {
 
     // Required fields validation
     if (!memberData.familyName?.trim()) errors.push('Nome da família é obrigatório');
-    if (!memberData.characterName?.trim()) errors.push('Nome do personagem é obrigatório');
-    if (!memberData.class?.trim()) errors.push('Classe é obrigatória');
-    if (!memberData.profile?.trim()) errors.push('Perfil é obrigatório');
+    if (!memberData.guildId) errors.push('Guild é obrigatória');
+    if (!memberData.classId) errors.push('Classe é obrigatória');
+    if (!memberData.classProfileId) errors.push('Perfil da classe é obrigatório');
 
     // Numeric validations
     const level = Number(memberData.level);
@@ -194,39 +204,6 @@ export function validateMemberData(memberData) {
 }
 
 /**
- * Available classes for member creation
- */
-export const AVAILABLE_CLASSES = [
-    'Warrior',
-    'Ranger',
-    'Sorceress',
-    'Berserker',
-    'Tamer',
-    'Musa',
-    'Maehwa',
-    'Valkyrie',
-    'Kunoichi',
-    'Ninja',
-    'Wizard',
-    'Witch',
-    'Dark Knight',
-    'Striker',
-    'Mystic',
-    'Lahn',
-    'Archer',
-    'Shai',
-    'Guardian',
-    'Hashashin',
-    'Nova',
-    'Sage',
-    'Corsair',
-    'Drakania',
-    'Woosa',
-    'Maegu',
-    'Scholar'
-];
-
-/**
  * Available profiles for member creation
  */
-export const AVAILABLE_PROFILES = ['Sucessão', 'Despertar'];
+export const AVAILABLE_PROFILES = ['Sucessão', 'Despertar', 'Ascensão'];

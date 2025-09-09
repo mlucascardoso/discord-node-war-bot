@@ -47,13 +47,18 @@ import {
     validateMemberData,
     formatNumber,
     getProfileColor,
-    AVAILABLE_CLASSES,
     AVAILABLE_PROFILES
 } from '../../api/members.js';
+import { getAllGuilds } from '../../api/guilds.js';
+import { getAllClasses } from '../../api/classes.js';
+import { getAllClassProfiles } from '../../api/class-profiles.js';
 
 const MembersPage = () => {
     const [members, setMembers] = useState([]);
     const [filteredMembers, setFilteredMembers] = useState([]);
+    const [guilds, setGuilds] = useState([]);
+    const [classes, setClasses] = useState([]);
+    const [classProfiles, setClassProfiles] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [classFilter, setClassFilter] = useState('');
     const [profileFilter, setProfileFilter] = useState('');
@@ -62,38 +67,47 @@ const MembersPage = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [editingMember, setEditingMember] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [formLoading, setFormLoading] = useState(false);
     const [error, setError] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [memberForm, setMemberForm] = useState({
         familyName: '',
-        characterName: '',
-        class: '',
+        guildId: '',
+        classId: '',
+        classProfileId: '',
         level: '',
         ap: '',
         awakenedAp: '',
-        dp: '',
-        profile: ''
+        dp: ''
     });
 
-    // Carregar membros da API
+    // Carregar dados da API
     useEffect(() => {
-        const fetchMembers = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
                 setError(null);
-                const membersData = await getAllMembers();
+                const [membersData, guildsData, classesData, classProfilesData] = await Promise.all([
+                    getAllMembers(),
+                    getAllGuilds(),
+                    getAllClasses(),
+                    getAllClassProfiles()
+                ]);
                 setMembers(membersData);
                 setFilteredMembers(membersData);
+                setGuilds(guildsData);
+                setClasses(classesData);
+                setClassProfiles(classProfilesData);
             } catch (err) {
-                console.error('Error fetching members:', err);
-                setError('Erro ao carregar membros');
-                setSnackbar({ open: true, message: 'Erro ao carregar membros', severity: 'error' });
+                console.error('Error fetching data:', err);
+                setError('Erro ao carregar dados');
+                setSnackbar({ open: true, message: 'Erro ao carregar dados', severity: 'error' });
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchMembers();
+        fetchData();
     }, []);
 
     // Filtrar membros
@@ -102,17 +116,16 @@ const MembersPage = () => {
 
         if (searchTerm) {
             filtered = filtered.filter(member =>
-                member.familyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                member.characterName.toLowerCase().includes(searchTerm.toLowerCase())
+                member.family_name?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         if (classFilter) {
-            filtered = filtered.filter(member => member.class === classFilter);
+            filtered = filtered.filter(member => member.class_id === parseInt(classFilter));
         }
 
         if (profileFilter) {
-            filtered = filtered.filter(member => member.profile === profileFilter);
+            filtered = filtered.filter(member => member.class_profile_id === parseInt(profileFilter));
         }
 
         setFilteredMembers(filtered);
@@ -122,18 +135,28 @@ const MembersPage = () => {
     const handleOpenDialog = (member = null) => {
         if (member) {
             setEditingMember(member);
-            setMemberForm(member);
+            // Mapear campos do backend (snake_case) para o formulário (camelCase)
+            setMemberForm({
+                familyName: member.family_name || '',
+                guildId: member.guild_id || '',
+                classId: member.class_id || '',
+                classProfileId: member.class_profile_id || '',
+                level: member.level || '',
+                ap: member.ap || '',
+                awakenedAp: member.awakened_ap || '',
+                dp: member.dp || ''
+            });
         } else {
             setEditingMember(null);
             setMemberForm({
                 familyName: '',
-                characterName: '',
-                class: '',
+                guildId: '',
+                classId: '',
+                classProfileId: '',
                 level: '',
                 ap: '',
                 awakenedAp: '',
-                dp: '',
-                profile: ''
+                dp: ''
             });
         }
         setOpenDialog(true);
@@ -164,15 +187,17 @@ const MembersPage = () => {
                 return;
             }
 
+            setFormLoading(true);
+
             const memberData = {
                 familyName: memberForm.familyName.trim(),
-                characterName: memberForm.characterName.trim(),
-                class: memberForm.class,
+                guildId: parseInt(memberForm.guildId),
+                classId: parseInt(memberForm.classId),
+                classProfileId: parseInt(memberForm.classProfileId),
                 level: parseInt(memberForm.level) || 1,
                 ap: parseInt(memberForm.ap) || 0,
                 awakenedAp: parseInt(memberForm.awakenedAp) || 0,
-                dp: parseInt(memberForm.dp) || 0,
-                profile: memberForm.profile
+                dp: parseInt(memberForm.dp) || 0
             };
 
             if (editingMember) {
@@ -214,6 +239,8 @@ const MembersPage = () => {
                 message: errorMessage, 
                 severity: 'error' 
             });
+        } finally {
+            setFormLoading(false);
         }
     };
 
@@ -273,7 +300,7 @@ const MembersPage = () => {
                         <Grid item xs={12} md={4}>
                             <TextField
                                 fullWidth
-                                placeholder="Buscar por família ou personagem..."
+                                placeholder="Buscar por família..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 InputProps={{
@@ -294,8 +321,8 @@ const MembersPage = () => {
                                     label="Classe"
                                 >
                                     <MenuItem value="">Todas</MenuItem>
-                                    {AVAILABLE_CLASSES.map(cls => (
-                                        <MenuItem key={cls} value={cls}>{cls}</MenuItem>
+                                    {classes.map(cls => (
+                                        <MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -309,8 +336,8 @@ const MembersPage = () => {
                                     label="Perfil"
                                 >
                                     <MenuItem value="">Todos</MenuItem>
-                                    {AVAILABLE_PROFILES.map(profile => (
-                                        <MenuItem key={profile} value={profile}>{profile}</MenuItem>
+                                    {classProfiles.map(profile => (
+                                        <MenuItem key={profile.id} value={profile.id}>{profile.profile}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -340,7 +367,7 @@ const MembersPage = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell>Família</TableCell>
-                                <TableCell>Personagem</TableCell>
+                                <TableCell>Guild</TableCell>
                                 <TableCell>Classe</TableCell>
                                 <TableCell align="center">Level</TableCell>
                                 <TableCell align="center">AP</TableCell>
@@ -358,13 +385,20 @@ const MembersPage = () => {
                                     <TableRow key={member.id} hover>
                                         <TableCell>
                                             <Typography variant="body2" fontWeight="bold">
-                                                {member.familyName}
+                                                {member.family_name}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>{member.characterName}</TableCell>
                                         <TableCell>
                                             <Chip 
-                                                label={member.class} 
+                                                label={guilds.find(g => g.id === member.guild_id)?.name || 'N/A'} 
+                                                size="small" 
+                                                variant="outlined"
+                                                color="info"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={classes.find(c => c.id === member.class_id)?.name || 'N/A'} 
                                                 size="small" 
                                                 variant="outlined"
                                             />
@@ -381,7 +415,7 @@ const MembersPage = () => {
                                         </TableCell>
                                         <TableCell align="center">
                                             <Typography variant="body2" color="secondary">
-                                                {formatNumber(member.awakenedAp)}
+                                                {formatNumber(member.awakened_ap)}
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="center">
@@ -396,9 +430,9 @@ const MembersPage = () => {
                                         </TableCell>
                                         <TableCell align="center">
                                             <Chip 
-                                                label={member.profile} 
+                                                label={classProfiles.find(p => p.id === member.class_profile_id)?.profile || 'N/A'} 
                                                 size="small"
-                                                color={getProfileColor(member.profile)}
+                                                color={getProfileColor(classProfiles.find(p => p.id === member.class_profile_id)?.profile)}
                                             />
                                         </TableCell>
                                         <TableCell align="center">
@@ -459,26 +493,44 @@ const MembersPage = () => {
                                 label="Nome da Família"
                                 value={memberForm.familyName}
                                 onChange={(e) => handleFormChange('familyName', e.target.value)}
+                                disabled={!!editingMember}
+                                helperText={editingMember ? "Nome da família não pode ser alterado" : ""}
+                                sx={editingMember ? {
+                                    '& .MuiInputBase-input.Mui-disabled': {
+                                        WebkitTextFillColor: '#9e9e9e !important',
+                                        color: '#9e9e9e !important',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                    },
+                                    '& .MuiInputBase-root.Mui-disabled': {
+                                        color: '#9e9e9e'
+                                    }
+                                } : {}}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Nome do Personagem"
-                                value={memberForm.characterName}
-                                onChange={(e) => handleFormChange('characterName', e.target.value)}
-                            />
+                            <FormControl fullWidth>
+                                <InputLabel>Guild</InputLabel>
+                                <Select
+                                    value={memberForm.guildId}
+                                    onChange={(e) => handleFormChange('guildId', e.target.value)}
+                                    label="Guild"
+                                >
+                                    {guilds.map(guild => (
+                                        <MenuItem key={guild.id} value={guild.id}>{guild.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel>Classe</InputLabel>
                                 <Select
-                                    value={memberForm.class}
-                                    onChange={(e) => handleFormChange('class', e.target.value)}
+                                    value={memberForm.classId}
+                                    onChange={(e) => handleFormChange('classId', e.target.value)}
                                     label="Classe"
                                 >
-                                    {AVAILABLE_CLASSES.map(cls => (
-                                        <MenuItem key={cls} value={cls}>{cls}</MenuItem>
+                                    {classes.map(cls => (
+                                        <MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -524,14 +576,14 @@ const MembersPage = () => {
                         </Grid>
                         <Grid item xs={12}>
                             <FormControl fullWidth>
-                                <InputLabel>Perfil</InputLabel>
+                                <InputLabel>Perfil da Classe</InputLabel>
                                 <Select
-                                    value={memberForm.profile}
-                                    onChange={(e) => handleFormChange('profile', e.target.value)}
-                                    label="Perfil"
+                                    value={memberForm.classProfileId}
+                                    onChange={(e) => handleFormChange('classProfileId', e.target.value)}
+                                    label="Perfil da Classe"
                                 >
-                                    {AVAILABLE_PROFILES.map(profile => (
-                                        <MenuItem key={profile} value={profile}>{profile}</MenuItem>
+                                    {classProfiles.map(profile => (
+                                        <MenuItem key={profile.id} value={profile.id}>{profile.profile}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -543,9 +595,10 @@ const MembersPage = () => {
                     <Button 
                         onClick={handleSaveMember} 
                         variant="contained"
-                        disabled={!memberForm.familyName || !memberForm.characterName || !memberForm.class}
+                        disabled={formLoading || !memberForm.familyName || !memberForm.guildId || !memberForm.classId || !memberForm.classProfileId}
+                        startIcon={formLoading ? <CircularProgress size={20} color="inherit" /> : null}
                     >
-                        {editingMember ? 'Salvar' : 'Adicionar'}
+                        {formLoading ? 'Salvando...' : (editingMember ? 'Salvar' : 'Adicionar')}
                     </Button>
                 </DialogActions>
             </Dialog>

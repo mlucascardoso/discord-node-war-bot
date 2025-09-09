@@ -27,7 +27,7 @@ export const createMember = async (memberData) => {
     }
     memberData.gearscore = calculateGearscore(memberData);
     const member = await dbCreateMember(memberData);
-    return member;
+    return { success: true, data: member };
 };
 
 export const updateMember = async (id, memberData) => {
@@ -39,13 +39,9 @@ export const updateMember = async (id, memberData) => {
     if (!existsById) {
         return { success: false, error: 'Membro não encontrado', details: 'Membro não encontrado' };
     }
-    const exists = await checkMemberAlreadyExists(memberData);
-    if (!exists.isValid) {
-        return { success: false, error: 'Nome da família já existe', details: exists.errors };
-    }
     memberData.gearscore = calculateGearscore(memberData);
     const member = await dbUpdateMember(id, memberData);
-    return member;
+    return { success: true, data: member };
 };
 
 const validateMemberBasicData = (memberData) => {

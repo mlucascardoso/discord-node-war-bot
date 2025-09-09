@@ -41,9 +41,13 @@ router.put('/:id', async (req, res) => {
         if (member.success) {
             return res.status(200).json(member.data);
         } else {
+            console.log(member);
+
             return res.status(400).json({ success: false, error: member.error, details: member.details });
         }
     } catch (error) {
+        console.log(error);
+
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }
 });

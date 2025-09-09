@@ -35,9 +35,9 @@ export const updateMember = async (id, memberData) => {
     if (!validation.isValid) {
         return { success: false, error: 'Erro de validação', details: validation.errors };
     }
-    const existsById = await checkMemberAlreadyExistsById(id);
-    if (!existsById.isValid) {
-        return { success: false, error: 'Membro não encontrado', details: existsById.errors };
+    const existsById = await getMemberById(id);
+    if (!existsById) {
+        return { success: false, error: 'Membro não encontrado', details: 'Membro não encontrado' };
     }
     const exists = await checkMemberAlreadyExists(memberData);
     if (!exists.isValid) {
@@ -81,15 +81,6 @@ const validateMemberBasicData = (memberData) => {
 const checkMemberAlreadyExists = async (memberData) => {
     const errors = [];
     const member = await dbGetMemberByFamilyName(memberData.familyName);
-    if (member) {
-        errors.push('Nome da família já existe');
-    }
-    return { isValid: errors.length === 0, errors };
-};
-
-const checkMemberAlreadyExistsById = async (id) => {
-    const errors = [];
-    const member = await dbGetMemberById(id);
     if (member) {
         errors.push('Nome da família já existe');
     }

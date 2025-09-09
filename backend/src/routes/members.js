@@ -24,7 +24,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const member = await createMember(req.body);
-        return res.json(member);
+        if (member.success) {
+            return res.status(201).json(member.data);
+        } else {
+            return res.status(400).json({ success: false, error: member.error, details: member.details });
+        }
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }
@@ -34,7 +38,11 @@ router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const member = await updateMember(id, req.body);
-        return res.json(member);
+        if (member.success) {
+            return res.status(200).json(member.data);
+        } else {
+            return res.status(400).json({ success: false, error: member.error, details: member.details });
+        }
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }

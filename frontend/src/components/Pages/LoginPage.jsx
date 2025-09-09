@@ -88,19 +88,12 @@ const LoginPage = () => {
                             }}>
                                 👻 BANSHEE
                             </Typography>
-                            <Typography variant="h6" sx={{
-                                color: '#A78BFA',
-                                fontStyle: 'italic',
-                                mb: 1
-                            }}>
-                                Guilda Mística
-                            </Typography>
                             <Typography variant="body2" sx={{
                                 color: '#B8B8B8',
                                 maxWidth: 300,
                                 mx: 'auto'
                             }}>
-                                Acesso restrito aos membros da guilda. Entre com suas credenciais místicas para acessar os poderes do bot.
+                                Acesso restrito aos membros da guilda.
                             </Typography>
                         </Box>
 

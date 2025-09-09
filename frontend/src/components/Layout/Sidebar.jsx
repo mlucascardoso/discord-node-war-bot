@@ -81,9 +81,6 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                         <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
                             👻 BANSHEE
                         </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.9, fontStyle: 'italic', lineHeight: 1 }}>
-                            Guilda Mística
-                        </Typography>
                     </>
                 ) : (
                     <Typography variant="h4" sx={{ fontWeight: 700, mr: 2 }}>

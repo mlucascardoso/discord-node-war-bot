@@ -39,7 +39,7 @@ export const createNodeWarTemplate = async (nodeWarTemplateData) => {
 const createNodeWarType = async (nodeWarTemplateData) => {
     const nodeWarTypeData = {
         name: nodeWarTemplateData.name,
-        informative_text: nodeWarTemplateData.informative_text,
+        informative_text: nodeWarTemplateData.informativeText,
         tier: nodeWarTemplateData.tier
     };
     return dbCreateNodeWarType(nodeWarTypeData);
@@ -48,17 +48,17 @@ const createNodeWarType = async (nodeWarTemplateData) => {
 const createNodeWarConfig = async (nodeWarTypeId, nodeWarTemplateData) => {
     const nodeWarConfigData = {
         nodewar_type_id: nodeWarTypeId,
-        bomber_slots: nodeWarTemplateData.bomber_slots,
-        frontline_slots: nodeWarTemplateData.frontline_slots,
-        ranged_slots: nodeWarTemplateData.ranged_slots,
-        shai_slots: nodeWarTemplateData.shai_slots,
-        pa_slots: nodeWarTemplateData.pa_slots,
-        flag_slots: nodeWarTemplateData.flag_slots,
-        defense_slots: nodeWarTemplateData.defense_slots,
-        caller_slots: nodeWarTemplateData.caller_slots,
-        elephant_slots: nodeWarTemplateData.elephant_slots,
+        bomber_slots: nodeWarTemplateData.bomberSlots,
+        frontline_slots: nodeWarTemplateData.frontlineSlots,
+        ranged_slots: nodeWarTemplateData.rangedSlots,
+        shai_slots: nodeWarTemplateData.shaiSlots,
+        pa_slots: nodeWarTemplateData.paSlots,
+        flag_slots: nodeWarTemplateData.flagSlots,
+        defense_slots: nodeWarTemplateData.defenseSlots,
+        caller_slots: nodeWarTemplateData.callerSlots,
+        elephant_slots: nodeWarTemplateData.elephantSlots,
         waitlist: 9999,
-        total_slots: nodeWarTemplateData.total_slots
+        total_slots: nodeWarTemplateData.totalSlots
     };
     return dbCreateNodeWarConfig(nodeWarConfigData);
 };
@@ -85,7 +85,7 @@ export const updateNodeWarTemplate = async (id, nodeWarTemplateData) => {
 const updateNodeWarType = async (nodeWarTypeId, nodeWarTemplateData) => {
     const nodeWarTypeData = {
         name: nodeWarTemplateData.name,
-        informative_text: nodeWarTemplateData.informative_text,
+        informative_text: nodeWarTemplateData.informativeText,
         tier: nodeWarTemplateData.tier
     };
     return dbUpdateNodeWarType(nodeWarTypeId, nodeWarTypeData);
@@ -94,17 +94,17 @@ const updateNodeWarType = async (nodeWarTypeId, nodeWarTemplateData) => {
 const updateNodeWarConfig = async (nodeWarTypeId, nodeWarConfigId, nodeWarTemplateData) => {
     const nodeWarConfigData = {
         nodewar_type_id: nodeWarTypeId,
-        bomber_slots: nodeWarTemplateData.bomber_slots,
-        frontline_slots: nodeWarTemplateData.frontline_slots,
-        ranged_slots: nodeWarTemplateData.ranged_slots,
-        shai_slots: nodeWarTemplateData.shai_slots,
-        pa_slots: nodeWarTemplateData.pa_slots,
-        flag_slots: nodeWarTemplateData.flag_slots,
-        defense_slots: nodeWarTemplateData.defense_slots,
-        caller_slots: nodeWarTemplateData.caller_slots,
-        elephant_slots: nodeWarTemplateData.elephant_slots,
+        bomber_slots: nodeWarTemplateData.bomberSlots,
+        frontline_slots: nodeWarTemplateData.frontlineSlots,
+        ranged_slots: nodeWarTemplateData.rangedSlots,
+        shai_slots: nodeWarTemplateData.shaiSlots,
+        pa_slots: nodeWarTemplateData.paSlots,
+        flag_slots: nodeWarTemplateData.flagSlots,
+        defense_slots: nodeWarTemplateData.defenseSlots,
+        caller_slots: nodeWarTemplateData.callerSlots,
+        elephant_slots: nodeWarTemplateData.elephantSlots,
         waitlist: 9999,
-        total_slots: nodeWarTemplateData.total_slots
+        total_slots: nodeWarTemplateData.totalSlots
     };
     return dbUpdateNodeWarConfig(nodeWarConfigId, nodeWarConfigData);
 };
@@ -125,31 +125,31 @@ const validateNodeWarTemplateBasicData = (nodeWarTemplateData) => {
 
 const validateNodeWarConfigs = (nodeWarTemplateData) => {
     const errors = [];
-    if (!nodeWarTemplateData.bomberSlots || nodeWarTemplateData.bomberSlots < 0 || !Number.isInteger(nodeWarTemplateData.bomberSlots)) {
+    if (nodeWarTemplateData.bomberSlots < 0 || !Number.isInteger(nodeWarTemplateData.bomberSlots)) {
         errors.push('Slots de bomber são obrigatórios');
     }
-    if (!nodeWarTemplateData.frontlineSlots || nodeWarTemplateData.frontlineSlots < 0 || !Number.isInteger(nodeWarTemplateData.frontlineSlots)) {
+    if (nodeWarTemplateData.frontlineSlots < 0 || !Number.isInteger(nodeWarTemplateData.frontlineSlots)) {
         errors.push('Slots de frontline são obrigatórios');
     }
-    if (!nodeWarTemplateData.rangedSlots || nodeWarTemplateData.rangedSlots < 0 || !Number.isInteger(nodeWarTemplateData.rangedSlots)) {
+    if (nodeWarTemplateData.rangedSlots < 0 || !Number.isInteger(nodeWarTemplateData.rangedSlots)) {
         errors.push('Slots de ranged são obrigatórios');
     }
-    if (!nodeWarTemplateData.shaiSlots || nodeWarTemplateData.shaiSlots < 0 || !Number.isInteger(nodeWarTemplateData.shaiSlots)) {
+    if (nodeWarTemplateData.shaiSlots < 0 || !Number.isInteger(nodeWarTemplateData.shaiSlots)) {
         errors.push('Slots de shai são obrigatórios');
     }
-    if (!nodeWarTemplateData.paSlots || nodeWarTemplateData.paSlots < 0 || !Number.isInteger(nodeWarTemplateData.paSlots)) {
+    if (nodeWarTemplateData.paSlots < 0 || !Number.isInteger(nodeWarTemplateData.paSlots)) {
         errors.push('Slots de pa são obrigatórios');
     }
-    if (!nodeWarTemplateData.flagSlots || nodeWarTemplateData.flagSlots < 0 || !Number.isInteger(nodeWarTemplateData.flagSlots)) {
+    if (nodeWarTemplateData.flagSlots < 0 || !Number.isInteger(nodeWarTemplateData.flagSlots)) {
         errors.push('Slots de flag são obrigatórios');
     }
-    if (!nodeWarTemplateData.defenseSlots || nodeWarTemplateData.defenseSlots < 0 || !Number.isInteger(nodeWarTemplateData.defenseSlots)) {
+    if (nodeWarTemplateData.defenseSlots < 0 || !Number.isInteger(nodeWarTemplateData.defenseSlots)) {
         errors.push('Slots de defense são obrigatórios');
     }
-    if (!nodeWarTemplateData.callerSlots || nodeWarTemplateData.callerSlots < 0 || !Number.isInteger(nodeWarTemplateData.callerSlots)) {
+    if (nodeWarTemplateData.callerSlots < 0 || !Number.isInteger(nodeWarTemplateData.callerSlots)) {
         errors.push('Slots de caller são obrigatórios');
     }
-    if (!nodeWarTemplateData.elephantSlots || nodeWarTemplateData.elephantSlots < 0 || !Number.isInteger(nodeWarTemplateData.elephantSlots)) {
+    if (nodeWarTemplateData.elephantSlots < 0 || !Number.isInteger(nodeWarTemplateData.elephantSlots)) {
         errors.push('Slots de elephant são obrigatórios');
     }
     if (!nodeWarTemplateData.totalSlots || nodeWarTemplateData.totalSlots < 0 || !Number.isInteger(nodeWarTemplateData.totalSlots)) {

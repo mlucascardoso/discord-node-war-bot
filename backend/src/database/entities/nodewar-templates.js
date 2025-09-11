@@ -39,6 +39,8 @@ export const createNodeWarType = async (nodeWarType) => {
 };
 
 export const updateNodeWarType = async (id, nodeWarType) => {
+    console.log(id, nodeWarType);
+
     const result = await sql`
         UPDATE
             nodewar_types

@@ -54,7 +54,19 @@ const NodewarTemplatesPage = () => {
             setTemplates(data);
         } catch (error) {
             console.error('Erro ao carregar templates:', error);
-            setErrors(['Erro ao carregar templates']);
+            
+            // Extrair mensagens de erro do backend
+            let errorMessages = ['Erro ao carregar templates'];
+            
+            if (error.details && Array.isArray(error.details)) {
+                errorMessages = error.details;
+            } else if (error.details && typeof error.details === 'string') {
+                errorMessages = [error.details];
+            } else if (error.message) {
+                errorMessages = [error.message];
+            }
+            
+            setErrors(errorMessages);
         } finally {
             setLoading(false);
         }
@@ -79,20 +91,20 @@ const NodewarTemplatesPage = () => {
         return {
             // NodeWar Type fields
             name: data.name,
-            informative_text: data.informative_text.replace(/\n/g, '\\n'),
+            informativeText: data.informative_text.replace(/\n/g, '\\n'),
             tier: data.tier,
             // NodeWar Config fields  
-            nodewar_type_id: 1, // Will be handled by backend
-            bomber_slots: data.bomber_slots,
-            frontline_slots: data.frontline_slots,
-            ranged_slots: data.ranged_slots,
-            shai_slots: data.shai_slots,
-            pa_slots: data.pa_slots,
-            flag_slots: data.flag_slots,
-            defense_slots: data.defense_slots,
-            caller_slots: data.caller_slots,
-            elephant_slots: data.elephant_slots,
-            total_slots: calculateTotalSlots(data)
+            nodewarTypeId: 1, // Will be handled by backend
+            bomberSlots: data.bomber_slots,
+            frontlineSlots: data.frontline_slots,
+            rangedSlots: data.ranged_slots,
+            shaiSlots: data.shai_slots,
+            paSlots: data.pa_slots,
+            flagSlots: data.flag_slots,
+            defenseSlots: data.defense_slots,
+            callerSlots: data.caller_slots,
+            elephantSlots: data.elephant_slots,
+            totalSlots: calculateTotalSlots(data)
         };
     };
 
@@ -130,7 +142,19 @@ const NodewarTemplatesPage = () => {
             });
         } catch (error) {
             console.error('Erro ao carregar template:', error);
-            setErrors(['Erro ao carregar dados do template']);
+            
+            // Extrair mensagens de erro do backend
+            let errorMessages = ['Erro ao carregar dados do template'];
+            
+            if (error.details && Array.isArray(error.details)) {
+                errorMessages = error.details;
+            } else if (error.details && typeof error.details === 'string') {
+                errorMessages = [error.details];
+            } else if (error.message) {
+                errorMessages = [error.message];
+            }
+            
+            setErrors(errorMessages);
             // Fallback para dados da listagem
             setFormData({
                 name: template.name || '',
@@ -176,7 +200,19 @@ const NodewarTemplatesPage = () => {
             await loadTemplates();
         } catch (error) {
             console.error('Erro ao salvar template:', error);
-            setErrors(['Erro ao salvar template']);
+            
+            // Extrair mensagens de erro do backend
+            let errorMessages = ['Erro ao salvar template'];
+            
+            if (error.details && Array.isArray(error.details)) {
+                errorMessages = error.details;
+            } else if (error.details && typeof error.details === 'string') {
+                errorMessages = [error.details];
+            } else if (error.message) {
+                errorMessages = [error.message];
+            }
+            
+            setErrors(errorMessages);
         } finally {
             setLoading(false);
         }
@@ -237,6 +273,16 @@ const NodewarTemplatesPage = () => {
             {loading && !dialogOpen && (
                 <Box display="flex" justifyContent="center" py={4}>
                     <CircularProgress sx={{ color: '#8B5CF6' }} />
+                </Box>
+            )}
+
+            {errors.length > 0 && !dialogOpen && (
+                <Box mb={3}>
+                    <Alert severity="error" onClose={() => setErrors([])}>
+                        {errors.map((error, index) => (
+                            <div key={index}>{error}</div>
+                        ))}
+                    </Alert>
                 </Box>
             )}
 

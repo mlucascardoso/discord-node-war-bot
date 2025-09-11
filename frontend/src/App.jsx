@@ -18,6 +18,7 @@ import AlertMessage from './components/UI/AlertMessage';
 import DashboardPage from './components/Pages/DashboardPage';
 import BotStatusPage from './components/Pages/BotStatusPage';
 import NodeWarPage from './components/Pages/NodeWarPage';
+import NodewarTemplatesPage from './components/Pages/NodewarTemplatesPage';
 import MembersPage from './components/Pages/MembersPage';
 import SettingsPage from './components/Pages/SettingsPage';
 
@@ -46,6 +47,7 @@ function App() {
         { id: 'welcome', label: 'Boas-vindas' },
         { id: 'status', label: 'Status do Bot' },
         { id: 'nodewar', label: 'Node War' },
+        { id: 'templates', label: 'Templates NodeWar' },
         { id: 'members', label: 'Membros' },
         { id: 'settings', label: 'Configurações' },
     ];
@@ -85,6 +87,8 @@ function App() {
                     loading={loading}
                     fetchChannels={fetchChannels}
                 />;
+            case 'templates':
+                return <NodewarTemplatesPage />;
             case 'members':
                 return <MembersPage />;
             case 'settings':

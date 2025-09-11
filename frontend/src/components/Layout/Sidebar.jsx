@@ -23,6 +23,7 @@ import {
     People as PeopleIcon,
     ExpandLess,
     ExpandMore,
+    ViewModule as TemplateIcon,
 } from '@mui/icons-material';
 
 const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCollapse }) => {
@@ -33,13 +34,14 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
         { id: 'members', label: 'Membros', icon: <PeopleIcon />, badge: null },
         {
             id: 'commands',
-            label: 'Comandos BOT',
+            label: 'Node War',
             icon: <TerminalIcon />,
             badge: null,
             isSubmenu: true,
             children: [
                 { id: 'status', label: 'Status do Bot', icon: <InfoIcon />, badge: botStatus?.botReady ? 'online' : 'offline' },
-                { id: 'nodewar', label: 'Node War', icon: <GamesIcon />, badge: null },
+                { id: 'nodewar', label: 'Sessões', icon: <GamesIcon />, badge: null },
+                { id: 'templates', label: 'Templates', icon: <TemplateIcon />, badge: null },
             ]
         },
         { id: 'settings', label: 'Configurações', icon: <SettingsIcon />, badge: null },

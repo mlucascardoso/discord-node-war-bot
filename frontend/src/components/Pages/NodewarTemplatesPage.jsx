@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import {
     getAllNodewarTemplates,
+    getNodewarTemplateById,
     createNodewarTemplate,
     updateNodewarTemplate,
     validateNodewarTemplate,
@@ -73,6 +74,29 @@ const NodewarTemplatesPage = () => {
         }));
     };
 
+    // Convert form data to backend format
+    const convertToBackendFormat = (data) => {
+        return {
+            // NodeWar Type fields
+            name: data.name,
+            informative_text: data.informative_text.replace(/\n/g, '\\n'),
+            tier: data.tier,
+            // NodeWar Config fields  
+            nodewar_type_id: 1, // Will be handled by backend
+            bomber_slots: data.bomber_slots,
+            frontline_slots: data.frontline_slots,
+            ranged_slots: data.ranged_slots,
+            shai_slots: data.shai_slots,
+            pa_slots: data.pa_slots,
+            flag_slots: data.flag_slots,
+            defense_slots: data.defense_slots,
+            caller_slots: data.caller_slots,
+            elephant_slots: data.elephant_slots,
+            waitlist: data.waitlist,
+            total_slots: calculateTotalSlots(data)
+        };
+    };
+
     // Open dialog for new template
     const handleNewTemplate = () => {
         setEditingTemplate(null);
@@ -82,23 +106,53 @@ const NodewarTemplatesPage = () => {
     };
 
     // Open dialog for editing template
-    const handleEditTemplate = (template) => {
+    const handleEditTemplate = async (template) => {
         setEditingTemplate(template);
-        setFormData({
-            name: template.name || '',
-            informative_text: template.informative_text || '',
-            tier: template.tier || 2,
-            bomber_slots: template.bomber_slots || 0,
-            frontline_slots: template.frontline_slots || 0,
-            ranged_slots: template.ranged_slots || 0,
-            shai_slots: template.shai_slots || 0,
-            pa_slots: template.pa_slots || 0,
-            flag_slots: template.flag_slots || 0,
-            defense_slots: template.defense_slots || 0,
-            caller_slots: template.caller_slots || 0,
-            elephant_slots: template.elephant_slots || 0,
-            waitlist: template.waitlist || 0
-        });
+        setLoading(true);
+        
+        try {
+            // Buscar dados completos do template pelo ID
+            const fullTemplate = await getNodewarTemplateById(template.id);
+            
+            setFormData({
+                name: fullTemplate.name || '',
+                // Converter \n literal para quebras de linha reais no textarea
+                informative_text: (fullTemplate.informative_text || '').replace(/\\n/g, '\n'),
+                tier: fullTemplate.tier || 2,
+                bomber_slots: fullTemplate.bomber_slots || 0,
+                frontline_slots: fullTemplate.frontline_slots || 0,
+                ranged_slots: fullTemplate.ranged_slots || 0,
+                shai_slots: fullTemplate.shai_slots || 0,
+                pa_slots: fullTemplate.pa_slots || 0,
+                flag_slots: fullTemplate.flag_slots || 0,
+                defense_slots: fullTemplate.defense_slots || 0,
+                caller_slots: fullTemplate.caller_slots || 0,
+                elephant_slots: fullTemplate.elephant_slots || 0,
+                waitlist: fullTemplate.waitlist || 0
+            });
+        } catch (error) {
+            console.error('Erro ao carregar template:', error);
+            setErrors(['Erro ao carregar dados do template']);
+            // Fallback para dados da listagem
+            setFormData({
+                name: template.name || '',
+                informative_text: (template.informative_text || '').replace(/\\n/g, '\n'),
+                tier: template.tier || 2,
+                bomber_slots: template.bomber_slots || 0,
+                frontline_slots: template.frontline_slots || 0,
+                ranged_slots: template.ranged_slots || 0,
+                shai_slots: template.shai_slots || 0,
+                pa_slots: template.pa_slots || 0,
+                flag_slots: template.flag_slots || 0,
+                defense_slots: template.defense_slots || 0,
+                caller_slots: template.caller_slots || 0,
+                elephant_slots: template.elephant_slots || 0,
+                waitlist: template.waitlist || 0
+            });
+        } finally {
+            setLoading(false);
+        }
+        
         setErrors([]);
         setDialogOpen(true);
     };
@@ -113,10 +167,7 @@ const NodewarTemplatesPage = () => {
 
         setLoading(true);
         try {
-            const templateData = {
-                ...formData,
-                total_slots: calculateTotalSlots(formData)
-            };
+            const templateData = convertToBackendFormat(formData);
 
             if (editingTemplate) {
                 await updateNodewarTemplate(editingTemplate.id, templateData);
@@ -236,8 +287,20 @@ const NodewarTemplatesPage = () => {
                                     </Box>
 
                                     {formatted.informative_text && (
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                            {formatted.informative_text}
+                                        <Typography 
+                                            variant="body2" 
+                                            color="text.secondary" 
+                                            sx={{ 
+                                                mb: 2,
+                                                display: '-webkit-box',
+                                                WebkitBoxOrient: 'vertical',
+                                                WebkitLineClamp: 2,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                lineHeight: 1.4
+                                            }}
+                                        >
+                                            {formatted.informative_text.replace(/\\n/g, ' • ')}
                                         </Typography>
                                     )}
 
@@ -334,16 +397,22 @@ const NodewarTemplatesPage = () => {
                             <TextField
                                 fullWidth
                                 multiline
-                                rows={3}
+                                rows={4}
                                 label="Texto Informativo"
+                                placeholder="Digite o texto informativo do template.&#10;&#10;Exemplo:&#10;🏰 Node War Tier 2&#10;📍 Localização: Balenos&#10;⏰ Horário: 20h00"
                                 value={formData.informative_text}
                                 onChange={(e) => handleFormChange('informative_text', e.target.value)}
                                 margin="normal"
+                                helperText="Use Enter para criar quebras de linha no texto"
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
                                         '& fieldset': { borderColor: 'rgba(139, 92, 246, 0.3)' },
                                         '&:hover fieldset': { borderColor: '#8B5CF6' },
                                         '&.Mui-focused fieldset': { borderColor: '#8B5CF6' }
+                                    },
+                                    '& .MuiFormHelperText-root': {
+                                        color: 'rgba(139, 92, 246, 0.7)',
+                                        fontSize: '0.75rem'
                                     }
                                 }}
                             />

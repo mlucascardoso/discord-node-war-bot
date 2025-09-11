@@ -14,8 +14,11 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const member = await getNodeWarTypeById(id);
-        return res.json(member);
+        const template = await getNodeWarTypeById(id);
+        if (!template) {
+            return res.status(404).json({ success: false, error: 'Template não encontrado' });
+        }
+        return res.json({ success: true, data: template });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }

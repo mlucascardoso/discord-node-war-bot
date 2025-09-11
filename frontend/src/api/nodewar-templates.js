@@ -49,7 +49,8 @@ export async function getAllNodewarTemplates() {
 export async function getNodewarTemplateById(id) {
     try {
         const response = await fetch(`${API_BASE}/nodewar-templates/${id}`);
-        return await handleResponse(response);
+        const result = await handleResponse(response);
+        return result.data || result;
     } catch (error) {
         console.error(`Error fetching nodewar template ${id}:`, error);
         throw error;

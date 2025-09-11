@@ -1,8 +1,11 @@
 import {
     createNodeWarConfig as dbCreateNodeWarConfig,
+    createNodeWarType as dbCreateNodeWarType,
     getAllNodeWarTypes as dbGetAllNodeWarTypes,
+    getNodeWarConfigByTypeId as dbGetNodeWarConfigByTypeId,
     getNodeWarConfigsByTypeId as dbGetNodeWarConfigsByTypeId,
-    updateNodeWarConfig as dbUpdateNodeWarConfig
+    updateNodeWarConfig as dbUpdateNodeWarConfig,
+    updateNodeWarType as dbUpdateNodeWarType
 } from '../database/entities/nodewar-templates.js';
 
 export const getAllNodeWarTypes = async () => {
@@ -28,8 +31,36 @@ export const createNodeWarTemplate = async (nodeWarTemplateData) => {
     if (!validationMaxSlots.isValid) {
         return { success: false, error: 'Erro de validação', details: validationMaxSlots.errors };
     }
-    const nodeWarConfig = await dbCreateNodeWarConfig(nodeWarTemplateData);
-    return { success: true, data: nodeWarConfig };
+    const nodeWarType = await createNodeWarType(nodeWarTemplateData);
+    const nodeWarConfig = await createNodeWarConfig(nodeWarType.id, nodeWarTemplateData);
+    return { success: true, data: { ...nodeWarType, ...nodeWarConfig } };
+};
+
+const createNodeWarType = async (nodeWarTemplateData) => {
+    const nodeWarTypeData = {
+        name: nodeWarTemplateData.name,
+        informative_text: nodeWarTemplateData.informative_text,
+        tier: nodeWarTemplateData.tier
+    };
+    return dbCreateNodeWarType(nodeWarTypeData);
+};
+
+const createNodeWarConfig = async (nodeWarTypeId, nodeWarTemplateData) => {
+    const nodeWarConfigData = {
+        nodewar_type_id: nodeWarTypeId,
+        bomber_slots: nodeWarTemplateData.bomber_slots,
+        frontline_slots: nodeWarTemplateData.frontline_slots,
+        ranged_slots: nodeWarTemplateData.ranged_slots,
+        shai_slots: nodeWarTemplateData.shai_slots,
+        pa_slots: nodeWarTemplateData.pa_slots,
+        flag_slots: nodeWarTemplateData.flag_slots,
+        defense_slots: nodeWarTemplateData.defense_slots,
+        caller_slots: nodeWarTemplateData.caller_slots,
+        elephant_slots: nodeWarTemplateData.elephant_slots,
+        waitlist: 9999,
+        total_slots: nodeWarTemplateData.total_slots
+    };
+    return dbCreateNodeWarConfig(nodeWarConfigData);
 };
 
 export const updateNodeWarTemplate = async (id, nodeWarTemplateData) => {
@@ -45,8 +76,37 @@ export const updateNodeWarTemplate = async (id, nodeWarTemplateData) => {
     if (!validationMaxSlots.isValid) {
         return { success: false, error: 'Erro de validação', details: validationMaxSlots.errors };
     }
-    const nodeWarConfig = await dbUpdateNodeWarConfig(id, nodeWarTemplateData);
-    return { success: true, data: nodeWarConfig };
+    const nodeWarType = await updateNodeWarType(id, nodeWarTemplateData);
+    const config = await dbGetNodeWarConfigByTypeId(id);
+    const nodeWarConfig = await updateNodeWarConfig(id, config.id, nodeWarTemplateData);
+    return { success: true, data: { ...nodeWarType, ...nodeWarConfig } };
+};
+
+const updateNodeWarType = async (nodeWarTypeId, nodeWarTemplateData) => {
+    const nodeWarTypeData = {
+        name: nodeWarTemplateData.name,
+        informative_text: nodeWarTemplateData.informative_text,
+        tier: nodeWarTemplateData.tier
+    };
+    return dbUpdateNodeWarType(nodeWarTypeId, nodeWarTypeData);
+};
+
+const updateNodeWarConfig = async (nodeWarTypeId, nodeWarConfigId, nodeWarTemplateData) => {
+    const nodeWarConfigData = {
+        nodewar_type_id: nodeWarTypeId,
+        bomber_slots: nodeWarTemplateData.bomber_slots,
+        frontline_slots: nodeWarTemplateData.frontline_slots,
+        ranged_slots: nodeWarTemplateData.ranged_slots,
+        shai_slots: nodeWarTemplateData.shai_slots,
+        pa_slots: nodeWarTemplateData.pa_slots,
+        flag_slots: nodeWarTemplateData.flag_slots,
+        defense_slots: nodeWarTemplateData.defense_slots,
+        caller_slots: nodeWarTemplateData.caller_slots,
+        elephant_slots: nodeWarTemplateData.elephant_slots,
+        waitlist: 9999,
+        total_slots: nodeWarTemplateData.total_slots
+    };
+    return dbUpdateNodeWarConfig(nodeWarConfigId, nodeWarConfigData);
 };
 
 const validateNodeWarTemplateBasicData = (nodeWarTemplateData) => {
@@ -91,9 +151,6 @@ const validateNodeWarConfigs = (nodeWarTemplateData) => {
     }
     if (!nodeWarTemplateData.elephantSlots || nodeWarTemplateData.elephantSlots < 0 || !Number.isInteger(nodeWarTemplateData.elephantSlots)) {
         errors.push('Slots de elephant são obrigatórios');
-    }
-    if (!nodeWarTemplateData.waitlist || nodeWarTemplateData.waitlist < 0 || !Number.isInteger(nodeWarTemplateData.waitlist)) {
-        errors.push('Fila de espera são obrigatórios');
     }
     if (!nodeWarTemplateData.totalSlots || nodeWarTemplateData.totalSlots < 0 || !Number.isInteger(nodeWarTemplateData.totalSlots)) {
         errors.push('Total de slots são obrigatórios');

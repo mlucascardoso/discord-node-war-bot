@@ -15,6 +15,17 @@ export const getNodeWarConfigsByTypeId = async (id) => {
     return result.rows[0];
 };
 
+export const getNodeWarConfigByTypeId = async (id) => {
+    const result = await sql`
+        SELECT *
+        FROM nodewar_configs
+        WHERE nodewar_type_id = ${id}
+        ORDER by created_at DESC
+        LIMIT 1
+    `;
+    return result.rows[0];
+};
+
 export const createNodeWarType = async (nodeWarType) => {
     const result = await sql`
         INSERT INTO

@@ -136,7 +136,7 @@ export function validateNodewarTemplate(templateData) {
     }
 
     // Slot validations
-    const slots = ['bomber_slots', 'frontline_slots', 'ranged_slots', 'shai_slots', 'pa_slots', 'flag_slots', 'defense_slots', 'caller_slots', 'elephant_slots', 'waitlist'];
+    const slots = ['bomber_slots', 'frontline_slots', 'ranged_slots', 'shai_slots', 'pa_slots', 'flag_slots', 'defense_slots', 'caller_slots', 'elephant_slots'];
 
     slots.forEach((slot) => {
         const value = Number(templateData[slot]);
@@ -178,8 +178,7 @@ export function formatNodewarTemplate(template) {
             flag: template.flag_slots || 0,
             defense: template.defense_slots || 0,
             caller: template.caller_slots || 0,
-            elephant: template.elephant_slots || 0,
-            waitlist: template.waitlist || 0
+            elephant: template.elephant_slots || 0
         },
         createdAt: template.created_at ? new Date(template.created_at).toLocaleString() : 'N/A'
     };
@@ -202,7 +201,6 @@ export function getDefaultTemplateData() {
         flag_slots: 1,
         defense_slots: 0,
         caller_slots: 1,
-        elephant_slots: 1,
-        waitlist: 10
+        elephant_slots: 1
     };
 }

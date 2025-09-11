@@ -68,7 +68,7 @@ const NodewarTemplatesPage = () => {
     const handleFormChange = (field, value) => {
         setFormData(prev => ({
             ...prev,
-            [field]: field.includes('slots') || field === 'tier' || field === 'waitlist' 
+            [field]: field.includes('slots') || field === 'tier' 
                 ? parseInt(value) || 0 
                 : value
         }));
@@ -92,7 +92,6 @@ const NodewarTemplatesPage = () => {
             defense_slots: data.defense_slots,
             caller_slots: data.caller_slots,
             elephant_slots: data.elephant_slots,
-            waitlist: data.waitlist,
             total_slots: calculateTotalSlots(data)
         };
     };
@@ -127,8 +126,7 @@ const NodewarTemplatesPage = () => {
                 flag_slots: fullTemplate.flag_slots || 0,
                 defense_slots: fullTemplate.defense_slots || 0,
                 caller_slots: fullTemplate.caller_slots || 0,
-                elephant_slots: fullTemplate.elephant_slots || 0,
-                waitlist: fullTemplate.waitlist || 0
+                elephant_slots: fullTemplate.elephant_slots || 0
             });
         } catch (error) {
             console.error('Erro ao carregar template:', error);
@@ -146,8 +144,7 @@ const NodewarTemplatesPage = () => {
                 flag_slots: template.flag_slots || 0,
                 defense_slots: template.defense_slots || 0,
                 caller_slots: template.caller_slots || 0,
-                elephant_slots: template.elephant_slots || 0,
-                waitlist: template.waitlist || 0
+                elephant_slots: template.elephant_slots || 0
             });
         } finally {
             setLoading(false);
@@ -203,8 +200,7 @@ const NodewarTemplatesPage = () => {
         { key: 'flag_slots', label: 'Flag', icon: '🚩' },
         { key: 'defense_slots', label: 'Defense', icon: '🛡️' },
         { key: 'caller_slots', label: 'Caller', icon: '🎙️' },
-        { key: 'elephant_slots', label: 'Elephant', icon: '🐘' },
-        { key: 'waitlist', label: 'Waitlist', icon: '⏳' }
+        { key: 'elephant_slots', label: 'Elephant', icon: '🐘' }
     ];
 
     return (

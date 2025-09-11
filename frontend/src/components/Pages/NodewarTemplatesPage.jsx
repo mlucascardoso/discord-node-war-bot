@@ -45,6 +45,44 @@ const NodewarTemplatesPage = () => {
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [formData, setFormData] = useState(getDefaultTemplateData());
     const [errors, setErrors] = useState([]);
+    const [errorTimer, setErrorTimer] = useState(null);
+
+    // Function to set errors with auto-clear timer
+    const setErrorsWithTimer = useCallback((newErrors) => {
+        // Clear existing timer
+        if (errorTimer) {
+            clearTimeout(errorTimer);
+        }
+
+        // Set new errors
+        setErrors(newErrors);
+
+        // Set new timer to clear errors after 2 seconds
+        const timer = setTimeout(() => {
+            setErrors([]);
+            setErrorTimer(null);
+        }, 2000);
+
+        setErrorTimer(timer);
+    }, [errorTimer]);
+
+    // Clear errors manually
+    const clearErrors = useCallback(() => {
+        if (errorTimer) {
+            clearTimeout(errorTimer);
+            setErrorTimer(null);
+        }
+        setErrors([]);
+    }, [errorTimer]);
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (errorTimer) {
+                clearTimeout(errorTimer);
+            }
+        };
+    }, [errorTimer]);
 
     // Load templates
     const loadTemplates = useCallback(async () => {
@@ -66,7 +104,7 @@ const NodewarTemplatesPage = () => {
                 errorMessages = [error.message];
             }
             
-            setErrors(errorMessages);
+            setErrorsWithTimer(errorMessages);
         } finally {
             setLoading(false);
         }
@@ -112,7 +150,7 @@ const NodewarTemplatesPage = () => {
     const handleNewTemplate = () => {
         setEditingTemplate(null);
         setFormData(getDefaultTemplateData());
-        setErrors([]);
+        clearErrors();
         setDialogOpen(true);
     };
 
@@ -154,7 +192,7 @@ const NodewarTemplatesPage = () => {
                 errorMessages = [error.message];
             }
             
-            setErrors(errorMessages);
+            setErrorsWithTimer(errorMessages);
             // Fallback para dados da listagem
             setFormData({
                 name: template.name || '',
@@ -174,7 +212,7 @@ const NodewarTemplatesPage = () => {
             setLoading(false);
         }
         
-        setErrors([]);
+        clearErrors();
         setDialogOpen(true);
     };
 
@@ -182,7 +220,7 @@ const NodewarTemplatesPage = () => {
     const handleSaveTemplate = async () => {
         const validation = validateNodewarTemplate(formData);
         if (!validation.isValid) {
-            setErrors(validation.errors);
+            setErrorsWithTimer(validation.errors);
             return;
         }
 
@@ -212,7 +250,7 @@ const NodewarTemplatesPage = () => {
                 errorMessages = [error.message];
             }
             
-            setErrors(errorMessages);
+            setErrorsWithTimer(errorMessages);
         } finally {
             setLoading(false);
         }
@@ -223,7 +261,7 @@ const NodewarTemplatesPage = () => {
         setDialogOpen(false);
         setEditingTemplate(null);
         setFormData(getDefaultTemplateData());
-        setErrors([]);
+        clearErrors();
     };
 
     // Slot configuration fields
@@ -278,7 +316,7 @@ const NodewarTemplatesPage = () => {
 
             {errors.length > 0 && !dialogOpen && (
                 <Box mb={3}>
-                    <Alert severity="error" onClose={() => setErrors([])}>
+                    <Alert severity="error" onClose={clearErrors}>
                         {errors.map((error, index) => (
                             <div key={index}>{error}</div>
                         ))}

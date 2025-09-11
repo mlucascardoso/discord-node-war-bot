@@ -1,7 +1,12 @@
 import { sql } from '@vercel/postgres';
 
 export const getAllNodeWarTypes = async () => {
-    const result = await sql`SELECT * FROM nodewar_types`;
+    const result = await sql`
+        SELECT *
+        FROM nodewar_types t1
+        INNER JOIN nodewar_configs t2 ON t1.id = t2.nodewar_type_id
+        ORDER BY t1.tier ASC
+    `;
     return result.rows;
 };
 

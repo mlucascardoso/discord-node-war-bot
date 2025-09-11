@@ -19,7 +19,7 @@ async function ensureBotInitialized(req, res, next) {
     next();
 }
 
-router.get('/api/channels', ensureBotInitialized, (req, res) => {
+router.get('/channels', ensureBotInitialized, (req, res) => {
     const channels = client.channels.cache
         .filter((channel) => channel.type === 0)
         .map((channel) => ({
@@ -31,7 +31,7 @@ router.get('/api/channels', ensureBotInitialized, (req, res) => {
     res.json({ channels });
 });
 
-router.post('/api/nodewar', ensureBotInitialized, async (req, res) => {
+router.post('/nodewar', ensureBotInitialized, async (req, res) => {
     const { channelId } = req.body;
 
     if (!channelId) {

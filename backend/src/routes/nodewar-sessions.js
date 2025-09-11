@@ -15,6 +15,9 @@ router.get('/', async (req, res) => {
 router.get('/active', async (req, res) => {
     try {
         const session = await getActiveNodewarSession();
+        if (!session) {
+            return res.status(404).json({ success: false, error: 'Sessão ativa não encontrada' });
+        }
         return res.json({ success: true, data: session });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });

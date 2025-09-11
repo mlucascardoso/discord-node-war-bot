@@ -3,7 +3,7 @@ import {
     getAllNodeWarTypes as dbGetAllNodeWarTypes,
     getNodeWarConfigsByTypeId as dbGetNodeWarConfigsByTypeId,
     updateNodeWarConfig as dbUpdateNodeWarConfig
-} from '../database/entities/nodewar.js';
+} from '../database/entities/nodewar-templates.js';
 
 export const getAllNodeWarTypes = async () => {
     const members = await dbGetAllNodeWarTypes();

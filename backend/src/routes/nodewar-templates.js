@@ -1,5 +1,5 @@
 import express from 'express';
-import { createNodeWarTemplate, getAllNodeWarTypes, getNodeWarTypeById, updateNodeWarTemplate } from '../api/nodewar.js';
+import { createNodeWarTemplate, getAllNodeWarTypes, getNodeWarTypeById, updateNodeWarTemplate } from '../api/nodewar-templates.js';
 
 const router = express.Router();
 

@@ -9,6 +9,7 @@ import classesRouter from './routes/classes.js';
 import discordRouter from './routes/discord.js';
 import guildsRouter from './routes/guilds.js';
 import membersRouter from './routes/members.js';
+import nodewarTemplatesRouter from './routes/nodewar-templates.js';
 
 const app = express();
 app.use(cors());
@@ -18,6 +19,7 @@ app.use('/api/class-profiles', classProfilesRouter);
 app.use('/api/members', membersRouter);
 app.use('/api/guilds', guildsRouter);
 app.use('/api/discord', discordRouter);
+app.use('/api/nodewar-templates', nodewarTemplatesRouter);
 
 const PORT = process.env.PORT || 3000;
 

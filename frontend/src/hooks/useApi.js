@@ -22,7 +22,7 @@ export const useApi = () => {
 
     const fetchChannels = useCallback(async () => {
         try {
-            const response = await fetch(`${API_BASE}/api/channels`);
+            const response = await fetch(`${API_BASE}/api/discord/channels`);
             const data = await response.json();
             setChannels(data.channels || []);
             return { success: true, data: data.channels || [] };
@@ -40,7 +40,7 @@ export const useApi = () => {
 
             setLoading(true);
             try {
-                const response = await fetch(`${API_BASE}/api/nodewar`, {
+                const response = await fetch(`${API_BASE}/api/discord/nodewar`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

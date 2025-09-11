@@ -1,21 +1,30 @@
 import express from 'express';
-import { createNodeWarTemplate, getAllNodeWarTypes, getNodeWarTypeById, updateNodeWarTemplate } from '../api/nodewar-templates.js';
+import { createNodewarSession, getActiveNodewarSession, getAllNodewarSessions, getNodeWarMembersBySessionId, updateNodewarSession } from '../api/nodewar-sessions.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
     try {
-        const members = await getAllNodeWarTypes();
+        const members = await getAllNodewarSessions();
         return res.json({ success: true, data: members });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/active', async (req, res) => {
+    try {
+        const session = await getActiveNodewarSession();
+        return res.json({ success: true, data: session });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
+    }
+});
+
+router.get('/:id/members', async (req, res) => {
     try {
         const { id } = req.params;
-        const template = await getNodeWarTypeById(id);
+        const template = await getNodeWarMembersBySessionId(id);
         if (!template) {
             return res.status(404).json({ success: false, error: 'Template não encontrado' });
         }
@@ -27,7 +36,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const member = await createNodeWarTemplate(req.body);
+        const member = await createNodewarSession(req.body);
         if (member.success) {
             return res.status(201).json(member.data);
         } else {
@@ -41,7 +50,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const member = await updateNodeWarTemplate(id, req.body);
+        const member = await updateNodewarSession(id, req.body);
         if (member.success) {
             return res.status(200).json(member.data);
         } else {

@@ -11,6 +11,7 @@ router.get('/', async (req, res) => {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }
 });
+
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;

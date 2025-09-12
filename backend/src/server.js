@@ -11,6 +11,7 @@ import guildsRouter from './routes/guilds.js';
 import membersRouter from './routes/members.js';
 import nodewarSessionsRouter from './routes/nodewar-sessions.js';
 import nodewarTemplatesRouter from './routes/nodewar-templates.js';
+import rolesRouter from './routes/roles.js';
 
 const app = express();
 app.use(cors());
@@ -22,6 +23,7 @@ app.use('/api/guilds', guildsRouter);
 app.use('/api/discord', discordRouter);
 app.use('/api/nodewar-templates', nodewarTemplatesRouter);
 app.use('/api/nodewar-sessions', nodewarSessionsRouter);
+app.use('/api/roles', rolesRouter);
 
 const PORT = process.env.PORT || 3000;
 

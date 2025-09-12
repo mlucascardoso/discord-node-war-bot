@@ -45,34 +45,33 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Debug database connection
-app.get('/debug/db', async (req, res) => {
+// Debug frontend files
+app.get('/debug/frontend', async (req, res) => {
     try {
-        const { query } = await import('./database/connection.js');
-        const result = await query('SELECT NOW() as current_time, version() as pg_version');
+        const fs = await import('fs');
+        const frontendPath = path.join(__dirname, '../../frontend/dist');
+
+        // Check if dist folder exists
+        const distExists = fs.existsSync(frontendPath);
+        const indexExists = fs.existsSync(path.join(frontendPath, 'index.html'));
+
+        let files = [];
+        if (distExists) {
+            files = fs.readdirSync(frontendPath);
+        }
+
         res.json({
-            success: true,
-            connection: 'OK',
-            data: result.rows[0],
-            env: {
-                NODE_ENV: process.env.NODE_ENV,
-                DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET'
-            }
+            frontendPath,
+            distExists,
+            indexExists,
+            files,
+            nodeEnv: process.env.NODE_ENV,
+            staticServing: process.env.NODE_ENV === 'production'
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            stack: error.stack,
-            env: {
-                NODE_ENV: process.env.NODE_ENV,
-                DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET'
-            }
-        });
+        res.status(500).json({ error: error.message });
     }
 });
-
-// TODO: Configurar frontend depois que o backend estiver funcionando
 
 const PORT = process.env.PORT || 3000;
 

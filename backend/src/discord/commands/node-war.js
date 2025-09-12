@@ -199,7 +199,8 @@ export const generateNodeWarMessage = async () => {
         console.log('🔄 [generateNodeWarMessage] Gerando mensagem NodeWar...');
 
         const sessionData = await getActiveNodewarSession();
-        console.log('📋 [generateNodeWarMessage] Sessão ativa:', sessionData ? `ID: ${sessionData.id}` : 'Nenhuma');
+        console.log('📋 [generateNodeWarMessage] Sessão ativa completa:', sessionData);
+        console.log('📋 [generateNodeWarMessage] Sessão ativa ID:', sessionData ? sessionData.id : 'Nenhuma');
 
         const embed = createNodeWarEmbed(sessionData);
 

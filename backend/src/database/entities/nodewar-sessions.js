@@ -27,11 +27,22 @@ export const getActiveNodewarSessionWithParticipants = async () => {
             t1.created_at as created_at,
             t3.name as template_name,
             t3.informative_text as informative_text,
-            t2.*
+            t2.nodewar_type_id,
+            t2.bomber_slots,
+            t2.frontline_slots,
+            t2.ranged_slots,
+            t2.shai_slots,
+            t2.pa_slots,
+            t2.flag_slots,
+            t2.defense_slots,
+            t2.caller_slots,
+            t2.elephant_slots,
+            t2.waitlist,
+            t2.total_slots
         FROM nodewar_sessions t1
         INNER JOIN nodewar_configs t2 ON t1.nodewar_config_id = t2.id
         INNER JOIN nodewar_types t3 ON t2.nodewar_type_id = t3.id
-        WHERE is_active = true
+        WHERE t1.is_active = true
     `;
     return result.rows[0];
 };

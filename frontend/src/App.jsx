@@ -23,7 +23,7 @@ import MembersPage from './components/Pages/MembersPage';
 import SettingsPage from './components/Pages/SettingsPage';
 
 // Hooks
-import { useApi } from './hooks/useApi';
+import { useDiscordBot } from './hooks/useDiscordBot';
 
 function App() {
     const [currentPage, setCurrentPage] = useState('welcome');
@@ -47,7 +47,7 @@ function App() {
         fetchRoles,
         fetchMemberRoles,
         updateMemberRoles
-    } = useApi();
+    } = useDiscordBot();
 
     const menuItems = [
         { id: 'welcome', label: 'Boas-vindas' },

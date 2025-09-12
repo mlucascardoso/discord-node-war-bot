@@ -25,6 +25,15 @@ app.use('/api/nodewar-templates', nodewarTemplatesRouter);
 app.use('/api/nodewar-sessions', nodewarSessionsRouter);
 app.use('/api/roles', rolesRouter);
 
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        service: 'discord-node-war-bot'
+    });
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

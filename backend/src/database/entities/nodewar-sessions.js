@@ -10,6 +10,15 @@ export const getAllNodewarSessions = async () => {
 
 export const getActiveNodewarSession = async () => {
     const result = await sql`
+        SELECT *
+        FROM nodewar_sessions
+        WHERE is_active = true
+    `;
+    return result.rows[0];
+};
+
+export const getActiveNodewarSessionWithParticipants = async () => {
+    const result = await sql`
         SELECT
             t1.id as id,
             t1.nodewar_config_id as nodewar_config_id,
@@ -63,4 +72,253 @@ export const closeNodewarSession = async () => {
         RETURNING *
     `;
     return result.rows[0];
+};
+
+// ==================== DISCORD INTEGRATION FUNCTIONS ====================
+
+/**
+ * 1. Busca member e suas roles por family_name
+ * @param {string} familyName - Nome da família do membro
+ * @returns {Object} Member com suas roles
+ */
+export const getMemberRolesByFamilyName = async (familyName) => {
+    const result = await sql`
+        SELECT 
+            m.id as member_id,
+            m.family_name,
+            COALESCE(
+                JSON_AGG(
+                    JSON_BUILD_OBJECT(
+                        'id', r.id,
+                        'name', r.name,
+                        'emoji', r.emoji
+                    )
+                ) FILTER (WHERE r.id IS NOT NULL),
+                '[]'::json
+            ) as roles
+        FROM members m
+        LEFT JOIN member_roles mr ON m.id = mr.member_id
+        LEFT JOIN roles r ON mr.role_id = r.id
+        WHERE m.family_name = ${familyName} AND m.is_active = true
+        GROUP BY m.id, m.family_name
+    `;
+
+    const member = result.rows[0];
+    if (!member) {
+        throw new Error(`❌ Membro "${familyName}" não encontrado no sistema`);
+    }
+
+    // Se não tem roles, adiciona FRONTLINE por padrão
+    if (!member.roles || member.roles.length === 0) {
+        const frontlineRole = await sql`SELECT id, name, emoji FROM roles WHERE name = 'FRONTLINE'`;
+        member.roles = frontlineRole.rows;
+    }
+
+    return member;
+};
+
+/**
+ * 2a. Busca configuração da sessão
+ */
+const getSessionConfig = async (sessionId) => {
+    const result = await sql`
+        SELECT 
+            nc.bomber_slots, nc.frontline_slots, nc.ranged_slots, nc.shai_slots,
+            nc.pa_slots, nc.flag_slots, nc.defense_slots, nc.caller_slots,
+            nc.elephant_slots, nc.total_slots
+        FROM nodewar_sessions ns
+        INNER JOIN nodewar_configs nc ON ns.nodewar_config_id = nc.id
+        WHERE ns.id = ${sessionId}
+    `;
+
+    if (!result.rows[0]) {
+        throw new Error(`❌ Sessão ${sessionId} não encontrada`);
+    }
+
+    return result.rows[0];
+};
+
+/**
+ * 2b. Conta participantes atuais por role
+ */
+const getCurrentParticipantCounts = async (sessionId) => {
+    const result = await sql`
+        SELECT r.name as role_name, COUNT(*) as current_count
+        FROM nodewar_session_member_role nsmr
+        INNER JOIN roles r ON nsmr.role_id = r.id
+        WHERE nsmr.nodewar_session_id = ${sessionId}
+        GROUP BY r.name
+    `;
+
+    const counts = {};
+    result.rows.forEach((row) => {
+        counts[row.role_name] = parseInt(row.current_count);
+    });
+
+    return counts;
+};
+
+/**
+ * 2. Busca slots disponíveis por role na sessão ativa
+ * @param {number} sessionId - ID da sessão
+ * @returns {Object} Slots disponíveis por role
+ */
+export const getAvailableSlotsBySession = async (sessionId) => {
+    const config = await getSessionConfig(sessionId);
+    const participantCounts = await getCurrentParticipantCounts(sessionId);
+
+    return {
+        BOMBER: Math.max(0, config.bomber_slots - (participantCounts.BOMBER || 0)),
+        FRONTLINE: Math.max(0, config.frontline_slots - (participantCounts.FRONTLINE || 0)),
+        RANGED: Math.max(0, config.ranged_slots - (participantCounts.RANGED || 0)),
+        SHAI: Math.max(0, config.shai_slots - (participantCounts.SHAI || 0)),
+        PA: Math.max(0, config.pa_slots - (participantCounts.PA || 0)),
+        BANDEIRA: Math.max(0, config.flag_slots - (participantCounts.BANDEIRA || 0)),
+        DEFENSE: Math.max(0, config.defense_slots - (participantCounts.DEFENSE || 0)),
+        CALLER: Math.max(0, config.caller_slots - (participantCounts.CALLER || 0)),
+        ELEFANTE: Math.max(0, config.elephant_slots - (participantCounts.ELEFANTE || 0)),
+        HWACHA: Math.max(0, config.ranged_slots - (participantCounts.HWACHA || 0)),
+        FLAME: Math.max(0, config.bomber_slots - (participantCounts.FLAME || 0)),
+        waitlist: 9999
+    };
+};
+
+/**
+ * 3a. Mapeamento de prioridade das roles
+ */
+const ROLE_PRIORITY_MAPPING = [
+    { nodeWarRole: 'CALLER', condition: (roles) => roles.some((r) => r.name === 'CALLER') },
+    { nodeWarRole: 'FLAME', condition: (roles) => roles.some((r) => r.name === 'FLAME') },
+    { nodeWarRole: 'HWACHA', condition: (roles) => roles.some((r) => r.name === 'HWACHA') },
+    { nodeWarRole: 'ELEFANTE', condition: (roles) => roles.some((r) => r.name === 'ELEFANTE') },
+    { nodeWarRole: 'BANDEIRA', condition: (roles) => roles.some((r) => r.name === 'BANDEIRA') },
+    { nodeWarRole: 'BOMBER', condition: (roles) => roles.some((r) => r.name === 'BOMBER') },
+    { nodeWarRole: 'SHAI', condition: (roles) => roles.some((r) => r.name === 'SHAI') },
+    { nodeWarRole: 'RANGED', condition: (roles) => roles.some((r) => r.name === 'RANGED') },
+    { nodeWarRole: 'FRONTLINE', condition: () => true }
+];
+
+/**
+ * 3b. Busca dados da role no banco
+ */
+const getRoleData = async (roleName) => {
+    const result = await sql`SELECT id, name, emoji FROM roles WHERE name = ${roleName}`;
+    return result.rows[0];
+};
+
+/**
+ * 3. Determina qual role o membro deve receber baseado na prioridade
+ * @param {Array} memberRoles - Roles do membro
+ * @param {Object} availableSlots - Slots disponíveis
+ * @returns {Object|null} Role escolhida ou null
+ */
+export const determineNodeWarRole = async (memberRoles, availableSlots) => {
+    // Encontra primeira role disponível com slots
+    for (const mapping of ROLE_PRIORITY_MAPPING) {
+        if (mapping.condition(memberRoles) && availableSlots[mapping.nodeWarRole] > 0) {
+            return await getRoleData(mapping.nodeWarRole);
+        }
+    }
+
+    // Se não encontrou nenhuma, vai para waitlist
+    return await getRoleData('waitlist');
+};
+
+/**
+ * 4. Adiciona membro à sessão com determinação automática de role
+ * @param {number} sessionId - ID da sessão
+ * @param {string} familyName - Nome da família do membro
+ * @returns {Object} Resultado da operação
+ */
+export const addMemberToSession = async (sessionId, familyName) => {
+    try {
+        console.log(`🔍 [addMemberToSession] Iniciando para: ${familyName} na sessão ${sessionId}`);
+
+        // 1. Remove participação anterior se existir
+        const deleteResult = await sql`
+            DELETE FROM nodewar_session_member_role 
+            WHERE nodewar_session_id = ${sessionId} 
+            AND member_id = (SELECT id FROM members WHERE family_name = ${familyName})
+        `;
+
+        if (deleteResult.rowCount > 0) {
+            console.log(`🗑️ [addMemberToSession] Removida participação anterior de ${familyName}`);
+        }
+
+        // 2. Busca member e suas roles
+        console.log(`👤 [addMemberToSession] Buscando member: ${familyName}`);
+        const member = await getMemberRolesByFamilyName(familyName);
+        console.log('👤 [addMemberToSession] Member encontrado:', {
+            id: member.member_id,
+            name: member.family_name,
+            roles: member.roles
+        });
+
+        // 3. Busca slots disponíveis
+        console.log('🎯 [addMemberToSession] Buscando slots disponíveis para sessão', sessionId);
+        const availableSlots = await getAvailableSlotsBySession(sessionId);
+        console.log('🎯 [addMemberToSession] Slots disponíveis:', availableSlots);
+
+        // 4. Determina role
+        console.log('⚔️ [addMemberToSession] Determinando role para member com roles:', member.roles);
+        const assignedRole = await determineNodeWarRole(member.roles, availableSlots);
+        console.log('⚔️ [addMemberToSession] Role determinada:', assignedRole);
+
+        // 5. Insere participação
+        await sql`
+            INSERT INTO nodewar_session_member_role (nodewar_session_id, member_id, role_id)
+            VALUES (${sessionId}, ${member.member_id}, ${assignedRole.id})
+        `;
+
+        console.log(`✅ [addMemberToSession] Participação inserida com sucesso para ${familyName}`);
+
+        return {
+            success: true,
+            memberName: familyName,
+            roleName: assignedRole.name,
+            roleEmoji: assignedRole.emoji,
+            isWaitlist: assignedRole.name === 'waitlist'
+        };
+    } catch (error) {
+        console.error(`❌ [addMemberToSession] Erro para ${familyName}:`, error.message);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
+
+/**
+ * 5. Remove membro da sessão
+ * @param {number} sessionId - ID da sessão
+ * @param {string} familyName - Nome da família do membro
+ * @returns {Object} Resultado da operação
+ */
+export const removeMemberFromSession = async (sessionId, familyName) => {
+    try {
+        const result = await sql`
+            DELETE FROM nodewar_session_member_role 
+            WHERE nodewar_session_id = ${sessionId} 
+            AND member_id = (SELECT id FROM members WHERE family_name = ${familyName})
+            RETURNING *
+        `;
+
+        if (result.rows.length === 0) {
+            return {
+                success: false,
+                error: `❌ ${familyName} não estava participando desta sessão`
+            };
+        }
+
+        return {
+            success: true,
+            memberName: familyName,
+            message: `✅ ${familyName} foi removido da NodeWar`
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
+    }
 };

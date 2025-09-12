@@ -40,7 +40,10 @@ function App() {
         loading,
         fetchBotStatus,
         fetchChannels,
-        executeNodeWar: apiExecuteNodeWar
+        executeNodeWar: apiExecuteNodeWar,
+        startBot,
+        stopBot,
+        restartBot
     } = useApi();
 
     const menuItems = [
@@ -77,7 +80,14 @@ function App() {
             case 'welcome':
                 return <DashboardPage />;
             case 'status':
-                return <BotStatusPage botStatus={botStatus} fetchBotStatus={fetchBotStatus} />;
+                return <BotStatusPage 
+                    botStatus={botStatus} 
+                    fetchBotStatus={fetchBotStatus}
+                    startBot={startBot}
+                    stopBot={stopBot}
+                    loading={loading}
+                    setMessage={setMessage}
+                />;
             case 'nodewar':
                 return <NodeWarPage 
                     channels={channels}

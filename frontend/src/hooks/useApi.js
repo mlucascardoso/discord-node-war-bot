@@ -10,7 +10,7 @@ export const useApi = () => {
 
     const fetchBotStatus = useCallback(async () => {
         try {
-            const response = await fetch(`${API_BASE}/api/status`);
+            const response = await fetch(`${API_BASE}/api/discord/status`);
             const data = await response.json();
             setBotStatus(data);
             return { success: true, data };
@@ -65,11 +65,91 @@ export const useApi = () => {
         [API_BASE]
     );
 
+    const startBot = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_BASE}/api/discord/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Atualiza o status após ligar o bot
+                await fetchBotStatus();
+                return { success: true, message: data.message || 'Bot ligado com sucesso! 🔮' };
+            } else {
+                return { success: false, error: data.error || 'Erro ao ligar o bot' };
+            }
+        } catch (error) {
+            console.error('Erro ao ligar bot:', error);
+            return { success: false, error: 'Erro ao despertar o espírito' };
+        } finally {
+            setLoading(false);
+        }
+    }, [API_BASE, fetchBotStatus]);
+
+    const stopBot = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_BASE}/api/discord/stop`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Atualiza o status após desligar o bot
+                await fetchBotStatus();
+                return { success: true, message: data.message || 'Bot desligado com sucesso! 💤' };
+            } else {
+                return { success: false, error: data.error || 'Erro ao desligar o bot' };
+            }
+        } catch (error) {
+            console.error('Erro ao desligar bot:', error);
+            return { success: false, error: 'Erro ao adormecer o espírito' };
+        } finally {
+            setLoading(false);
+        }
+    }, [API_BASE, fetchBotStatus]);
+
+    const restartBot = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_BASE}/api/discord/restart`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Atualiza o status após reiniciar o bot
+                await fetchBotStatus();
+                return { success: true, message: data.message || 'Bot reiniciado com sucesso! ⚡' };
+            } else {
+                return { success: false, error: data.error || 'Erro ao reiniciar o bot' };
+            }
+        } catch (error) {
+            console.error('Erro ao reiniciar bot:', error);
+            return { success: false, error: 'Erro ao reencarnação do espírito' };
+        } finally {
+            setLoading(false);
+        }
+    }, [API_BASE, fetchBotStatus]);
+
     // Fetch data on mount only
     useEffect(() => {
         fetchBotStatus();
-        fetchChannels();
-    }, [fetchBotStatus, fetchChannels]);
+    }, [fetchBotStatus]);
 
     return {
         botStatus,
@@ -77,6 +157,9 @@ export const useApi = () => {
         loading,
         fetchBotStatus,
         fetchChannels,
-        executeNodeWar
+        executeNodeWar,
+        startBot,
+        stopBot,
+        restartBot
     };
 };

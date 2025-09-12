@@ -20,7 +20,7 @@ client.on('messageCreate', (message) => {
 
 async function handleSlashCommand(interaction) {
     if (interaction.commandName === 'nodewar') {
-        const messageData = generateNodeWarMessage();
+        const messageData = await generateNodeWarMessage();
         const buttons = createNodeWarButtons();
         await interaction.reply({ ...messageData, components: buttons });
     }
@@ -33,18 +33,40 @@ const handleNodeWarParticipate = async (interaction) => {
     }
 
     const userName = interaction.member.displayName || interaction.user.username;
-    const userDiscordRoles = interaction.member.roles.cache.map((role) => ({ name: role.name }));
-
-    assignUserToNodeWar(userName, userDiscordRoles);
 
     try {
         await interaction.deferUpdate();
 
-        const updatedMessageData = generateNodeWarMessage();
+        // Tenta atribuir usuário à NodeWar usando banco de dados
+        const result = await assignUserToNodeWar(userName);
+
+        if (result.success) {
+            console.log(`✅ ${userName} foi atribuído à role ${result.role} ${result.roleEmoji}`);
+            if (result.waitlisted) {
+                console.log(`⏳ ${userName} foi adicionado à lista de espera`);
+            }
+        } else {
+            console.error(`❌ Erro ao atribuir ${userName}: ${result.error}`);
+        }
+
+        // Atualiza a mensagem com dados atualizados do banco
+        const updatedMessageData = await generateNodeWarMessage();
         const updatedButtons = createNodeWarButtons();
         await interaction.editReply({ ...updatedMessageData, components: updatedButtons });
     } catch (error) {
         console.error('Erro nodewar:', error.code || error.message);
+
+        // Tenta responder com erro se ainda não respondeu
+        try {
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: '❌ Erro ao processar participação. Tente novamente.',
+                    ephemeral: true
+                });
+            }
+        } catch (replyError) {
+            console.error('Erro ao responder com erro:', replyError);
+        }
     }
 };
 

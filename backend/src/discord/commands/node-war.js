@@ -1,68 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import { addMemberToActiveSession, getActiveNodewarSession, getNodeWarMembersBySessionId } from '../../api/nodewar-sessions.js';
 
-export const NODE_WAR_CONFIG = {
-    totalVagas: 40,
-    tier: 2,
-    roles: {
-        CALLER: { emoji: '🎙️', max: 1, members: [], waitlist: [] },
-        FLAME: { emoji: '🔥', max: 3, members: [], waitlist: [] },
-        HWACHA: { emoji: '🏹', max: 4, members: [], waitlist: [] },
-        ELEFANTE: { emoji: '🐘', max: 1, members: [], waitlist: [] },
-        BANDEIRA: { emoji: '🚩', max: 1, members: [], waitlist: [] },
-        BOMBER: { emoji: '💥', max: 0, members: [], waitlist: [] },
-        SHAI: { emoji: '🥁', max: 4, members: [], waitlist: [] },
-        RANGED: { emoji: '🏹', max: 4, members: [], waitlist: [] },
-        FRONTLINE: { emoji: '⚔️', max: 22, members: [], waitlist: [] }
-    }
-};
-
-const ROLE_PRIORITY_MAPPING = [
-    {
-        nodeWarRole: 'CALLER',
-        discordRoles: ['CALLER'],
-        condition: (userRoles) => userRoles.some((role) => role === 'CALLER')
-    },
-    {
-        nodeWarRole: 'FLAME',
-        discordRoles: ['FLAME'],
-        condition: (userRoles) => userRoles.some((role) => role === 'FLAME')
-    },
-    {
-        nodeWarRole: 'HWACHA',
-        discordRoles: ['HWACHA'],
-        condition: (userRoles) => userRoles.some((role) => role === 'HWACHA')
-    },
-    {
-        nodeWarRole: 'ELEFANTE',
-        discordRoles: ['ELEFANTE'],
-        condition: (userRoles) => userRoles.some((role) => role === 'ELEFANTE')
-    },
-    {
-        nodeWarRole: 'BANDEIRA',
-        discordRoles: ['BANDEIRA'],
-        condition: (userRoles) => userRoles.some((role) => role === 'BANDEIRA')
-    },
-    {
-        nodeWarRole: 'BOMBER',
-        discordRoles: ['BOMBER'],
-        condition: (userRoles) => userRoles.some((role) => role === 'BOMBER')
-    },
-    {
-        nodeWarRole: 'SHAI',
-        discordRoles: ['SHAI'],
-        condition: (userRoles) => userRoles.some((role) => role === 'SHAI')
-    },
-    {
-        nodeWarRole: 'RANGED',
-        discordRoles: ['RANGED', 'ARQUEIRO', 'CAÇADORA'],
-        condition: (userRoles) => userRoles.includes('RANGED') && (userRoles.includes('ARQUEIRO') || userRoles.includes('CAÇADORA'))
-    },
-    {
-        nodeWarRole: 'FRONTLINE',
-        discordRoles: ['FRONTLINE'],
-        condition: () => true
-    }
-];
+// ==================== LEGACY CODE - REMOVIDO ====================
+// As configurações agora vêm do banco de dados via sessões ativas
 
 const getNextNodeWarDate = () => {
     const now = new Date();
@@ -90,85 +30,75 @@ const formatDateToPT = (date) => {
     return `${dayName}, ${day} de ${month} de ${year}`;
 };
 
-const hasRoleSpace = (roleName) => {
-    const role = NODE_WAR_CONFIG.roles[roleName];
-    return role && role.members.length < role.max;
-};
+// ==================== LEGACY FUNCTIONS - REMOVIDAS ====================
+// Funções antigas substituídas pelas funções do banco de dados
 
-const determineUserRole = (userDiscordRoles) => {
-    const userRoleNames = userDiscordRoles.map((role) => role.name.toUpperCase());
+export const assignUserToNodeWar = async (userName) => {
+    try {
+        const result = await addMemberToActiveSession(userName);
 
-    const eligibleRole = ROLE_PRIORITY_MAPPING.find((mapping) => mapping.condition(userRoleNames) && hasRoleSpace(mapping.nodeWarRole));
-
-    return eligibleRole ? eligibleRole.nodeWarRole : null;
-};
-
-const addUserToRole = (userName, roleName) => {
-    if (!roleName || !NODE_WAR_CONFIG.roles[roleName]) {
-        return false;
+        if (result.success) {
+            return {
+                success: true,
+                role: result.roleName,
+                roleEmoji: result.roleEmoji,
+                waitlisted: result.isWaitlist,
+                memberName: result.memberName
+            };
+        } else {
+            return {
+                success: false,
+                error: result.error
+            };
+        }
+    } catch (error) {
+        console.error('Erro ao atribuir usuário à NodeWar:', error);
+        return {
+            success: false,
+            error: 'Erro interno do sistema'
+        };
     }
-
-    const role = NODE_WAR_CONFIG.roles[roleName];
-
-    if (!role.members.includes(userName)) {
-        role.members.push(userName);
-        return true;
-    }
-
-    return false;
-};
-
-const addUserToWaitlist = (userName) => {
-    const waitlistRole = NODE_WAR_CONFIG.roles.FRONTLINE;
-    if (!waitlistRole.waitlist.includes(userName)) {
-        waitlistRole.waitlist.push(userName);
-        return true;
-    }
-    return false;
-};
-
-const removeUserFromAllRoles = (userName) => {
-    Object.values(NODE_WAR_CONFIG.roles).forEach((role) => {
-        role.members = role.members.filter((member) => member !== userName);
-        role.waitlist = role.waitlist.filter((member) => member !== userName);
-    });
-};
-
-export const assignUserToNodeWar = (userName, userDiscordRoles) => {
-    removeUserFromAllRoles(userName);
-
-    const assignedRole = determineUserRole(userDiscordRoles);
-
-    if (assignedRole) {
-        addUserToRole(userName, assignedRole);
-        return { success: true, role: assignedRole, waitlisted: false };
-    }
-
-    addUserToWaitlist(userName);
-    return { success: true, role: null, waitlisted: true };
 };
 
 /**
- * Cria um embed para a node war
+ * Cria um embed para a node war usando dados do banco
+ * @param {Object} sessionData - Dados da sessão ativa
  * @returns {EmbedBuilder} Embed para a node war
  */
-const createNodeWarEmbed = () => {
-    const nextDate = getNextNodeWarDate();
-    const formattedDate = formatDateToPT(nextDate);
+const createNodeWarEmbed = (sessionData) => {
+    // Se não há sessão ativa, usa dados padrão
+    if (!sessionData) {
+        const nextDate = getNextNodeWarDate();
+        const formattedDate = formatDateToPT(nextDate);
+
+        return new EmbedBuilder()
+            .setTitle('👻 NODE WAR BANSHEE')
+            .setDescription(
+                `
+                🏰 **Nenhuma sessão ativa no momento**
+                
+                ⚠️ **Para criar uma nova NodeWar:**
+                1. Acesse o painel web
+                2. Crie uma nova sessão
+                3. Execute o comando novamente
+                
+                ⏰ **${formattedDate}** • 21:00 - 22:00
+                `
+            )
+            .setColor('#FF6B6B');
+    }
+
+    // Formata data da sessão
+    const sessionDate = new Date(sessionData.schedule);
+    const formattedDate = formatDateToPT(sessionDate);
 
     const embed = new EmbedBuilder()
         .setTitle('👻 NODE WAR BANSHEE')
         .setDescription(
             `
-                🏰 **NODE TIER ${NODE_WAR_CONFIG.tier} — ${NODE_WAR_CONFIG.totalVagas} VAGAS**
+                📋 **${sessionData.template_name}**
+                ${sessionData.informative_text ? sessionData.informative_text.replace(/\\n/g, '\n') : ''}
 
-                🔮 **CANAIS PARA CONFIRMAR SUA PARTICIPAÇÃO**
-                *(Mediah 1 / Valencia 1)*
-
-                ⏰ **Servidor anunciado às 20:45**
-
-                👻 Todos os membros devem estar presentes no Discord
-                ⚡ **Atenção:** A partir das 20:00 está liberado o roubo de vaga
                 ⏰ **${formattedDate}** • 21:00 - 22:00
             `
         )
@@ -177,46 +107,136 @@ const createNodeWarEmbed = () => {
     return embed;
 };
 
-export const generateNodeWarMessage = () => {
-    const embed = createNodeWarEmbed();
-    const roleKeys = Object.keys(NODE_WAR_CONFIG.roles);
-    const columns = [[], [], []];
+/**
+ * Organiza participantes por role
+ */
+const organizeParticipantsByRole = (participants) => {
+    const roleParticipants = {};
+    participants.forEach((participant) => {
+        const roleName = participant.role_name;
+        if (!roleParticipants[roleName]) {
+            roleParticipants[roleName] = [];
+        }
+        roleParticipants[roleName].push(participant);
+    });
+    return roleParticipants;
+};
 
-    roleKeys.forEach((role, index) => columns[index % 3].push(role));
+/**
+ * Cria mapeamento de slots e emojis
+ */
+const createRoleMappings = (sessionData) => {
+    const roleSlots = {
+        BOMBER: sessionData.bomber_slots,
+        FRONTLINE: sessionData.frontline_slots,
+        RANGED: sessionData.ranged_slots,
+        SHAI: sessionData.shai_slots,
+        PA: sessionData.pa_slots,
+        BANDEIRA: sessionData.flag_slots,
+        DEFENSE: sessionData.defense_slots,
+        CALLER: sessionData.caller_slots,
+        ELEFANTE: sessionData.elephant_slots,
+        HWACHA: sessionData.ranged_slots,
+        FLAME: sessionData.bomber_slots
+    };
+
+    const roleEmojis = {
+        CALLER: '🎙️',
+        FLAME: '🔥',
+        HWACHA: '🏹',
+        ELEFANTE: '🐘',
+        BANDEIRA: '🚩',
+        BOMBER: '💥',
+        SHAI: '🥁',
+        RANGED: '🏹',
+        FRONTLINE: '⚔️',
+        PA: '🗡️',
+        DEFENSE: '🛡️'
+    };
+
+    return { roleSlots, roleEmojis };
+};
+
+/**
+ * Adiciona fields das roles ao embed
+ */
+const addRoleFieldsToEmbed = (embed, roleSlots, roleEmojis, roleParticipants) => {
+    const roleNames = Object.keys(roleSlots);
+    const columns = [[], [], []];
+    roleNames.forEach((role, index) => columns[index % 3].push(role));
 
     const maxRows = Math.max(...columns.map((col) => col.length));
     for (let row = 0; row < maxRows; row++) {
         for (let col = 0; col < 3; col++) {
             if (columns[col][row]) {
                 const roleName = columns[col][row];
-                const role = NODE_WAR_CONFIG.roles[roleName];
-                const currentCount = role.members.length;
-                const maxCount = role.max;
+                const maxSlots = roleSlots[roleName];
+                const currentParticipants = roleParticipants[roleName] || [];
+                const emoji = roleEmojis[roleName] || '⚡';
 
                 let fieldValue = '';
-                if (role.members.length > 0) {
-                    role.members.forEach((member) => (fieldValue += `👻 ${member}\n`));
+                if (currentParticipants.length > 0) {
+                    currentParticipants.forEach((p) => {
+                        fieldValue += `👻 ${p.member_family_name}\n`;
+                    });
                 }
-                embed.addFields({ name: `${role.emoji} ${roleName} (${currentCount}/${maxCount})`, value: fieldValue, inline: true });
+                if (fieldValue === '') fieldValue = '\u200b';
+
+                embed.addFields({
+                    name: `${emoji} ${roleName} (${currentParticipants.length}/${maxSlots})`,
+                    value: fieldValue,
+                    inline: true
+                });
             } else {
                 embed.addFields({ name: '\u200b', value: '\u200b', inline: true });
             }
         }
     }
+};
 
-    const waitlistMembers = [];
-    Object.keys(NODE_WAR_CONFIG.roles).forEach((roleName) => {
-        const role = NODE_WAR_CONFIG.roles[roleName];
-        role.waitlist.forEach((member) => waitlistMembers.push(`${role.emoji} ${member}`));
-    });
+export const generateNodeWarMessage = async () => {
+    try {
+        console.log('🔄 [generateNodeWarMessage] Gerando mensagem NodeWar...');
 
-    if (waitlistMembers.length > 0) {
-        let waitlistText = '';
-        waitlistMembers.forEach((member) => (waitlistText += `⏳ ${member}\n`));
-        embed.addFields({ name: '🌙 **Lista de Espera**', value: waitlistText, inline: false });
+        const sessionData = await getActiveNodewarSession();
+        console.log('📋 [generateNodeWarMessage] Sessão ativa:', sessionData ? `ID: ${sessionData.id}` : 'Nenhuma');
+
+        const embed = createNodeWarEmbed(sessionData);
+
+        if (!sessionData) {
+            console.log('⚠️ [generateNodeWarMessage] Nenhuma sessão ativa encontrada');
+            return { embeds: [embed] };
+        }
+
+        const participants = await getNodeWarMembersBySessionId(sessionData.id);
+        console.log('👥 [generateNodeWarMessage] Participantes encontrados:', participants.length);
+        console.log('👥 [generateNodeWarMessage] Lista de participantes:', participants);
+
+        const roleParticipants = organizeParticipantsByRole(participants);
+        console.log('🏷️ [generateNodeWarMessage] Participantes organizados por role:', roleParticipants);
+
+        const { roleSlots, roleEmojis } = createRoleMappings(sessionData);
+
+        addRoleFieldsToEmbed(embed, roleSlots, roleEmojis, roleParticipants);
+
+        // Adiciona waitlist se houver
+        const waitlistParticipants = roleParticipants.waitlist || [];
+        if (waitlistParticipants.length > 0) {
+            console.log('⏳ [generateNodeWarMessage] Participantes na waitlist:', waitlistParticipants.length);
+            let waitlistText = '';
+            waitlistParticipants.forEach((p) => {
+                waitlistText += `⏳ ${p.member_family_name}\n`;
+            });
+            embed.addFields({ name: '🌙 **Lista de Espera**', value: waitlistText, inline: false });
+        }
+
+        console.log('✅ [generateNodeWarMessage] Mensagem gerada com sucesso');
+        return { embeds: [embed] };
+    } catch (error) {
+        console.error('❌ [generateNodeWarMessage] Erro ao gerar mensagem NodeWar:', error);
+        const errorEmbed = new EmbedBuilder().setTitle('❌ Erro ao carregar NodeWar').setDescription('Erro ao buscar dados da sessão. Tente novamente.').setColor('#FF6B6B');
+        return { embeds: [errorEmbed] };
     }
-
-    return { embeds: [embed] };
 };
 
 export const createNodeWarButtons = () => {

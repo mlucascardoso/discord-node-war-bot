@@ -1,9 +1,12 @@
 import {
+    addMemberToSession as dbAddMemberToSession,
     closeNodewarSession as dbCloseNodewarSession,
     createNodewarSession as dbCreateNodewarSession,
     getActiveNodewarSession as dbGetActiveNodewarSession,
+    getActiveNodewarSessionWithParticipants as dbGetActiveNodewarSessionWithParticipants,
     getAllNodewarSessions as dbGetAllNodewarSessions,
-    getNodeWarMembersBySessionId as dbGetNodeWarMembersBySessionId
+    getNodeWarMembersBySessionId as dbGetNodeWarMembersBySessionId,
+    removeMemberFromSession as dbRemoveMemberFromSession
 } from '../database/entities/nodewar-sessions.js';
 
 export const getAllNodewarSessions = async () => {
@@ -11,7 +14,7 @@ export const getAllNodewarSessions = async () => {
 };
 
 export const getActiveNodewarSession = async () => {
-    return dbGetActiveNodewarSession();
+    return dbGetActiveNodewarSessionWithParticipants();
 };
 
 export const getNodeWarMembersBySessionId = async (sessionId) => {
@@ -57,4 +60,38 @@ const validateNodewarSessionBasicData = (session) => {
 const hasActiveNodewarSession = async () => {
     const session = await dbGetActiveNodewarSession();
     return !!session;
+};
+
+// ==================== DISCORD INTEGRATION API ====================
+
+/**
+ * Adiciona membro à sessão ativa com determinação automática de role
+ * @param {string} familyName - Nome da família do membro
+ * @returns {Promise<Object>} Resultado da operação
+ */
+export const addMemberToActiveSession = async (familyName) => {
+    // Busca sessão ativa
+    const activeSession = await dbGetActiveNodewarSession();
+    if (!activeSession) {
+        return { success: false, error: 'Não há sessão ativa no momento' };
+    }
+
+    // Adiciona membro à sessão
+    return await dbAddMemberToSession(activeSession.id, familyName);
+};
+
+/**
+ * Remove membro da sessão ativa
+ * @param {string} familyName - Nome da família do membro
+ * @returns {Promise<Object>} Resultado da operação
+ */
+export const removeMemberFromActiveSession = async (familyName) => {
+    // Busca sessão ativa
+    const activeSession = await dbGetActiveNodewarSession();
+    if (!activeSession) {
+        return { success: false, error: 'Não há sessão ativa no momento' };
+    }
+
+    // Remove membro da sessão
+    return await dbRemoveMemberFromSession(activeSession.id, familyName);
 };

@@ -37,6 +37,7 @@ import {
     getDefaultTemplateData,
     calculateTotalSlots
 } from '../../api/nodewar-templates.js';
+import PageLoader from '../UI/PageLoader.jsx';
 
 const NodewarTemplatesPage = () => {
     const [templates, setTemplates] = useState([]);
@@ -264,6 +265,11 @@ const NodewarTemplatesPage = () => {
         clearErrors();
     };
 
+    // Loading state
+    if (loading && !dialogOpen && templates.length === 0) {
+        return <PageLoader message="Carregando templates..." />;
+    }
+
     // Slot configuration fields
     const slotFields = [
         { key: 'bomber_slots', label: 'Bomber', icon: '💥' },
@@ -308,11 +314,6 @@ const NodewarTemplatesPage = () => {
                 </Button>
             </Box>
 
-            {loading && !dialogOpen && (
-                <Box display="flex" justifyContent="center" py={4}>
-                    <CircularProgress sx={{ color: '#8B5CF6' }} />
-                </Box>
-            )}
 
             {errors.length > 0 && !dialogOpen && (
                 <Box mb={3}>

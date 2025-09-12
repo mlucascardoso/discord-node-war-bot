@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PageLoader from '../UI/PageLoader.jsx';
 import {
     Box,
     Card,
@@ -45,6 +46,11 @@ const LoginPage = () => {
     const handleTogglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
+
+    // Loading state
+    if (loading) {
+        return <PageLoader message="Invocando espíritos..." />;
+    }
 
     return (
         <Box sx={{

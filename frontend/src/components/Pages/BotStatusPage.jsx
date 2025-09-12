@@ -1,4 +1,5 @@
 import React from 'react';
+import PageLoader from '../UI/PageLoader.jsx';
 import {
     Container,
     Typography,

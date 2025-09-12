@@ -41,6 +41,7 @@ import {
     groupSessionMembersByRole,
     getSessionStats
 } from '../../api/nodewar-sessions.js';
+import PageLoader from '../UI/PageLoader.jsx';
 
 const NodeWarPage = ({ 
     channels, 
@@ -199,6 +200,11 @@ const NodeWarPage = ({
         }
     };
 
+    // Loading state
+    if (pageLoading && !activeSession && templates.length === 0) {
+        return <PageLoader message="Carregando dados da sessão..." />;
+    }
+
     // Format session data
     const formattedSession = formatNodewarSession(activeSession);
     const groupedMembers = groupSessionMembersByRole(sessionMembers);
@@ -228,12 +234,6 @@ const NodeWarPage = ({
                 </Box>
             )}
 
-            {/* Loading */}
-            {pageLoading && (
-                <Box display="flex" justifyContent="center" py={4}>
-                    <CircularProgress sx={{ color: '#8B5CF6' }} />
-                </Box>
-            )}
 
             <Grid container spacing={3}>
                 {/* Template Selection & Session Creation */}

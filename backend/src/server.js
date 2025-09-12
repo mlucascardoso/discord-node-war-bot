@@ -45,6 +45,33 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Debug database connection
+app.get('/debug/db', async (req, res) => {
+    try {
+        const { query } = await import('./database/connection.js');
+        const result = await query('SELECT NOW() as current_time, version() as pg_version');
+        res.json({
+            success: true,
+            connection: 'OK',
+            data: result.rows[0],
+            env: {
+                NODE_ENV: process.env.NODE_ENV,
+                DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack,
+            env: {
+                NODE_ENV: process.env.NODE_ENV,
+                DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET'
+            }
+        });
+    }
+});
+
 // TODO: Configurar frontend depois que o backend estiver funcionando
 
 const PORT = process.env.PORT || 3000;

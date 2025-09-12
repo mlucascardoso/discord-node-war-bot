@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from '../connection.js';
 
 /**
  * Busca todas as roles de um membro

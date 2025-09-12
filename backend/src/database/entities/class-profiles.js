@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from '../connection.js';
 
 export const getAllClassProfiles = async () => {
     const result = await sql`SELECT * FROM class_profiles`;

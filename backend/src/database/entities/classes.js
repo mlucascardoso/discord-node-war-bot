@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from '../connection.js';
 
 export const getAllClasses = async () => {
     const result = await sql`SELECT * FROM classes order by name asc`;

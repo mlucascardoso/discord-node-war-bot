@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from '../connection.js';
 
 export const getAllRoles = async () => {
     const result = await sql`

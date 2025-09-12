@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from '../connection.js';
 
 export const getAllNodewarSessions = async () => {
     const result = await sql`

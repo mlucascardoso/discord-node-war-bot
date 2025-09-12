@@ -72,13 +72,10 @@ const hasActiveNodewarSession = async () => {
 export const addMemberToActiveSession = async (familyName) => {
     // Busca sessão ativa
     const activeSession = await dbGetActiveNodewarSession();
-    console.log('🔍 [addMemberToActiveSession] Sessão ativa encontrada:', activeSession);
 
     if (!activeSession) {
         return { success: false, error: 'Não há sessão ativa no momento' };
     }
-
-    console.log(`🎯 [addMemberToActiveSession] Usando sessão ID: ${activeSession.id} para ${familyName}`);
 
     // Adiciona membro à sessão
     return await dbAddMemberToSession(activeSession.id, familyName);

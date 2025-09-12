@@ -196,26 +196,15 @@ const addRoleFieldsToEmbed = (embed, roleSlots, roleEmojis, roleParticipants) =>
 
 export const generateNodeWarMessage = async () => {
     try {
-        console.log('🔄 [generateNodeWarMessage] Gerando mensagem NodeWar...');
-
         const sessionData = await getActiveNodewarSession();
-        console.log('📋 [generateNodeWarMessage] Sessão ativa completa:', sessionData);
-        console.log('📋 [generateNodeWarMessage] Sessão ativa ID:', sessionData ? sessionData.id : 'Nenhuma');
-
         const embed = createNodeWarEmbed(sessionData);
 
         if (!sessionData) {
-            console.log('⚠️ [generateNodeWarMessage] Nenhuma sessão ativa encontrada');
             return { embeds: [embed] };
         }
 
         const participants = await getNodeWarMembersBySessionId(sessionData.id);
-        console.log('👥 [generateNodeWarMessage] Participantes encontrados:', participants.length);
-        console.log('👥 [generateNodeWarMessage] Lista de participantes:', participants);
-
         const roleParticipants = organizeParticipantsByRole(participants);
-        console.log('🏷️ [generateNodeWarMessage] Participantes organizados por role:', roleParticipants);
-
         const { roleSlots, roleEmojis } = createRoleMappings(sessionData);
 
         addRoleFieldsToEmbed(embed, roleSlots, roleEmojis, roleParticipants);
@@ -223,7 +212,6 @@ export const generateNodeWarMessage = async () => {
         // Adiciona waitlist se houver
         const waitlistParticipants = roleParticipants.waitlist || [];
         if (waitlistParticipants.length > 0) {
-            console.log('⏳ [generateNodeWarMessage] Participantes na waitlist:', waitlistParticipants.length);
             let waitlistText = '';
             waitlistParticipants.forEach((p) => {
                 waitlistText += `⏳ ${p.member_family_name}\n`;
@@ -231,10 +219,9 @@ export const generateNodeWarMessage = async () => {
             embed.addFields({ name: '🌙 **Lista de Espera**', value: waitlistText, inline: false });
         }
 
-        console.log('✅ [generateNodeWarMessage] Mensagem gerada com sucesso');
         return { embeds: [embed] };
     } catch (error) {
-        console.error('❌ [generateNodeWarMessage] Erro ao gerar mensagem NodeWar:', error);
+        console.error('❌ Erro ao gerar mensagem NodeWar:', error);
         const errorEmbed = new EmbedBuilder().setTitle('❌ Erro ao carregar NodeWar').setDescription('Erro ao buscar dados da sessão. Tente novamente.').setColor('#FF6B6B');
         return { embeds: [errorEmbed] };
     }

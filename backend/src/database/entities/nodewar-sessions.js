@@ -243,45 +243,27 @@ export const determineNodeWarRole = async (memberRoles, availableSlots) => {
  */
 export const addMemberToSession = async (sessionId, familyName) => {
     try {
-        console.log(`🔍 [addMemberToSession] Iniciando para: ${familyName} na sessão ${sessionId}`);
-
         // 1. Remove participação anterior se existir
-        const deleteResult = await sql`
+        await sql`
             DELETE FROM nodewar_session_member_role 
             WHERE nodewar_session_id = ${sessionId} 
             AND member_id = (SELECT id FROM members WHERE family_name = ${familyName})
         `;
 
-        if (deleteResult.rowCount > 0) {
-            console.log(`🗑️ [addMemberToSession] Removida participação anterior de ${familyName}`);
-        }
-
         // 2. Busca member e suas roles
-        console.log(`👤 [addMemberToSession] Buscando member: ${familyName}`);
         const member = await getMemberRolesByFamilyName(familyName);
-        console.log('👤 [addMemberToSession] Member encontrado:', {
-            id: member.member_id,
-            name: member.family_name,
-            roles: member.roles
-        });
 
         // 3. Busca slots disponíveis
-        console.log('🎯 [addMemberToSession] Buscando slots disponíveis para sessão', sessionId);
         const availableSlots = await getAvailableSlotsBySession(sessionId);
-        console.log('🎯 [addMemberToSession] Slots disponíveis:', availableSlots);
 
         // 4. Determina role
-        console.log('⚔️ [addMemberToSession] Determinando role para member com roles:', member.roles);
         const assignedRole = await determineNodeWarRole(member.roles, availableSlots);
-        console.log('⚔️ [addMemberToSession] Role determinada:', assignedRole);
 
         // 5. Insere participação
         await sql`
             INSERT INTO nodewar_session_member_role (nodewar_session_id, member_id, role_id)
             VALUES (${sessionId}, ${member.member_id}, ${assignedRole.id})
         `;
-
-        console.log(`✅ [addMemberToSession] Participação inserida com sucesso para ${familyName}`);
 
         return {
             success: true,
@@ -291,7 +273,7 @@ export const addMemberToSession = async (sessionId, familyName) => {
             isWaitlist: assignedRole.name === 'waitlist'
         };
     } catch (error) {
-        console.error(`❌ [addMemberToSession] Erro para ${familyName}:`, error.message);
+        console.error(`❌ Erro ao adicionar ${familyName}:`, error.message);
         return {
             success: false,
             error: error.message

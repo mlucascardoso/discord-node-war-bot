@@ -6,7 +6,7 @@ export const useApi = () => {
     const [channels, setChannels] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const API_BASE = '/api';
+    const API_BASE = '/';
 
     const fetchBotStatus = useCallback(async () => {
         try {

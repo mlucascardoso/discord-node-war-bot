@@ -151,6 +151,57 @@ export const useApi = () => {
         fetchBotStatus();
     }, [fetchBotStatus]);
 
+    const fetchRoles = useCallback(async () => {
+        try {
+            const response = await fetch(`${API_BASE}/api/roles`);
+            const data = await response.json();
+            return { success: true, data: data.roles || [] };
+        } catch (error) {
+            console.error('Erro ao buscar roles:', error);
+            return { success: false, error: 'Erro ao buscar roles místicas' };
+        }
+    }, [API_BASE]);
+
+    const fetchMemberRoles = useCallback(
+        async (memberId) => {
+            try {
+                const response = await fetch(`${API_BASE}/api/roles/member/${memberId}`);
+                const data = await response.json();
+                return { success: true, data: data.roles || [] };
+            } catch (error) {
+                console.error('Erro ao buscar roles do membro:', error);
+                return { success: false, error: 'Erro ao buscar roles do membro' };
+            }
+        },
+        [API_BASE]
+    );
+
+    const updateMemberRoles = useCallback(
+        async (memberId, roleIds) => {
+            try {
+                const response = await fetch(`${API_BASE}/api/roles/member/${memberId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ roleIds })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    return { success: true, message: data.message || 'Roles atualizadas com sucesso! ⚔️' };
+                } else {
+                    return { success: false, error: data.error || 'Erro ao atualizar roles' };
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar roles do membro:', error);
+                return { success: false, error: 'Erro ao atualizar roles místicas' };
+            }
+        },
+        [API_BASE]
+    );
+
     return {
         botStatus,
         channels,
@@ -160,6 +211,9 @@ export const useApi = () => {
         executeNodeWar,
         startBot,
         stopBot,
-        restartBot
+        restartBot,
+        fetchRoles,
+        fetchMemberRoles,
+        updateMemberRoles
     };
 };

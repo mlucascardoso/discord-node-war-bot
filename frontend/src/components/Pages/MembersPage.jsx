@@ -30,7 +30,10 @@ import {
     InputAdornment,
     CircularProgress,
     Alert,
-    Snackbar
+    Snackbar,
+    OutlinedInput,
+    ListItemText,
+    Checkbox
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -53,12 +56,84 @@ import { getAllGuilds } from '../../api/guilds.js';
 import { getAllClasses } from '../../api/classes.js';
 import { getAllClassProfiles } from '../../api/class-profiles.js';
 
-const MembersPage = () => {
+// Componente para exibir roles do membro
+const MemberRolesDisplay = ({ memberId, fetchMemberRoles, refreshKey }) => {
+    const [memberRoles, setMemberRoles] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadMemberRoles = async () => {
+            if (!memberId || !fetchMemberRoles) return;
+            
+            try {
+                setLoading(true);
+                const result = await fetchMemberRoles(memberId);
+                if (result.success) {
+                    setMemberRoles(result.data);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar roles do membro:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadMemberRoles();
+    }, [memberId, fetchMemberRoles, refreshKey]);
+
+    if (loading) {
+        return <CircularProgress size={16} />;
+    }
+
+    if (!memberRoles.length) {
+        return <Typography variant="body2" color="text.secondary">-</Typography>;
+    }
+
+    return (
+        <Box display="flex" flexWrap="wrap" gap={0.5} justifyContent="center">
+            {memberRoles.slice(0, 3).map((role) => (
+                <Chip
+                    key={role.id}
+                    label={role.emoji}
+                    size="small"
+                    sx={{
+                        minWidth: 'auto',
+                        fontSize: '0.75rem',
+                        height: '20px',
+                        '& .MuiChip-label': {
+                            padding: '0 4px'
+                        }
+                    }}
+                />
+            ))}
+            {memberRoles.length > 3 && (
+                <Chip
+                    label={`+${memberRoles.length - 3}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                        minWidth: 'auto',
+                        fontSize: '0.65rem',
+                        height: '20px',
+                        '& .MuiChip-label': {
+                            padding: '0 4px'
+                        }
+                    }}
+                />
+            )}
+        </Box>
+    );
+};
+
+const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessage }) => {
     const [members, setMembers] = useState([]);
     const [filteredMembers, setFilteredMembers] = useState([]);
     const [guilds, setGuilds] = useState([]);
     const [classes, setClasses] = useState([]);
     const [classProfiles, setClassProfiles] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [memberRoles, setMemberRoles] = useState([]);
+    const [rolesRefreshKey, setRolesRefreshKey] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
     const [classFilter, setClassFilter] = useState('');
     const [profileFilter, setProfileFilter] = useState('');
@@ -78,7 +153,8 @@ const MembersPage = () => {
         level: '',
         ap: '',
         awakenedAp: '',
-        dp: ''
+        dp: '',
+        roleIds: []
     });
 
     // Carregar dados da API
@@ -87,17 +163,21 @@ const MembersPage = () => {
             try {
                 setLoading(true);
                 setError(null);
-                const [membersData, guildsData, classesData, classProfilesData] = await Promise.all([
+                const [membersData, guildsData, classesData, classProfilesData, rolesResult] = await Promise.all([
                     getAllMembers(),
                     getAllGuilds(),
                     getAllClasses(),
-                    getAllClassProfiles()
+                    getAllClassProfiles(),
+                    fetchRoles()
                 ]);
                 setMembers(membersData);
                 setFilteredMembers(membersData);
                 setGuilds(guildsData);
                 setClasses(classesData);
                 setClassProfiles(classProfilesData);
+                if (rolesResult.success) {
+                    setRoles(rolesResult.data);
+                }
             } catch (err) {
                 console.error('Error fetching data:', err);
                 setError('Erro ao carregar dados');
@@ -132,9 +212,13 @@ const MembersPage = () => {
         setPage(0);
     }, [members, searchTerm, classFilter, profileFilter]);
 
-    const handleOpenDialog = (member = null) => {
+    const handleOpenDialog = async (member = null) => {
         if (member) {
             setEditingMember(member);
+            // Carregar roles do membro
+            const memberRolesResult = await fetchMemberRoles(member.id);
+            const currentRoleIds = memberRolesResult.success ? memberRolesResult.data.map(role => role.id) : [];
+            
             // Mapear campos do backend (snake_case) para o formulário (camelCase)
             setMemberForm({
                 familyName: member.family_name || '',
@@ -144,8 +228,13 @@ const MembersPage = () => {
                 level: member.level || '',
                 ap: member.ap || '',
                 awakenedAp: member.awakened_ap || '',
-                dp: member.dp || ''
+                dp: member.dp || '',
+                roleIds: currentRoleIds
             });
+            
+            if (memberRolesResult.success) {
+                setMemberRoles(memberRolesResult.data);
+            }
         } else {
             setEditingMember(null);
             setMemberForm({
@@ -156,8 +245,10 @@ const MembersPage = () => {
                 level: '',
                 ap: '',
                 awakenedAp: '',
-                dp: ''
+                dp: '',
+                roleIds: []
             });
+            setMemberRoles([]);
         }
         setOpenDialog(true);
     };
@@ -200,27 +291,46 @@ const MembersPage = () => {
                 dp: parseInt(memberForm.dp) || 0
             };
 
+            let memberId;
+            
             if (editingMember) {
                 // Editar membro existente
                 const updatedMember = await updateMember(editingMember.id, memberData);
+                memberId = editingMember.id;
                 setMembers(prev => prev.map(member =>
                     member.id === editingMember.id ? updatedMember : member
                 ));
-                setSnackbar({ 
-                    open: true, 
-                    message: 'Membro atualizado com sucesso!', 
-                    severity: 'success' 
-                });
             } else {
                 // Adicionar novo membro
                 const newMember = await createMember(memberData);
+                memberId = newMember.id;
                 setMembers(prev => [...prev, newMember]);
-                setSnackbar({ 
-                    open: true, 
-                    message: 'Membro criado com sucesso!', 
-                    severity: 'success' 
-                });
             }
+
+            // Atualizar roles do membro
+            if (memberForm.roleIds && memberForm.roleIds.length > 0) {
+                const rolesResult = await updateMemberRoles(memberId, memberForm.roleIds);
+                if (!rolesResult.success) {
+                    console.error('Erro ao atualizar roles:', rolesResult.error);
+                    setMessage({ 
+                        text: 'Membro salvo, mas houve erro ao atualizar roles: ' + rolesResult.error, 
+                        severity: 'warning' 
+                    });
+                }
+            }
+
+            // Recarregar a lista de membros para refletir as mudanças
+            const updatedMembersData = await getAllMembers();
+            setMembers(updatedMembersData);
+            
+            // Forçar refresh das roles na tabela
+            setRolesRefreshKey(prev => prev + 1);
+
+            setSnackbar({ 
+                open: true, 
+                message: editingMember ? 'Membro atualizado com sucesso! ⚔️' : 'Membro criado com sucesso! ⚔️', 
+                severity: 'success' 
+            });
             
             handleCloseDialog();
         } catch (error) {
@@ -375,6 +485,7 @@ const MembersPage = () => {
                                 <TableCell align="center">DP</TableCell>
                                 <TableCell align="center">GS</TableCell>
                                 <TableCell align="center">Perfil</TableCell>
+                                <TableCell align="center">Roles</TableCell>
                                 <TableCell align="center">Ações</TableCell>
                             </TableRow>
                         </TableHead>
@@ -433,6 +544,13 @@ const MembersPage = () => {
                                                 label={classProfiles.find(p => p.id === member.class_profile_id)?.profile || 'N/A'} 
                                                 size="small"
                                                 color={getProfileColor(classProfiles.find(p => p.id === member.class_profile_id)?.profile)}
+                                            />
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <MemberRolesDisplay 
+                                                memberId={member.id} 
+                                                fetchMemberRoles={fetchMemberRoles}
+                                                refreshKey={rolesRefreshKey}
                                             />
                                         </TableCell>
                                         <TableCell align="center">
@@ -584,6 +702,28 @@ const MembersPage = () => {
                                 >
                                     {classProfiles.map(profile => (
                                         <MenuItem key={profile.id} value={profile.id}>{profile.profile}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Roles de Combate</InputLabel>
+                                <Select
+                                    multiple
+                                    value={memberForm.roleIds || []}
+                                    onChange={(e) => handleFormChange('roleIds', e.target.value)}
+                                    input={<OutlinedInput label="Roles de Combate" />}
+                                    renderValue={(selected) => {
+                                        const selectedRoles = roles.filter(role => selected.includes(role.id));
+                                        return selectedRoles.map(role => `${role.emoji} ${role.name}`).join(', ');
+                                    }}
+                                >
+                                    {roles.map((role) => (
+                                        <MenuItem key={role.id} value={role.id}>
+                                            <Checkbox checked={memberForm.roleIds?.includes(role.id) || false} />
+                                            <ListItemText primary={`${role.emoji} ${role.name}`} />
+                                        </MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>

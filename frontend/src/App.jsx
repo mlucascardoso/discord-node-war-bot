@@ -43,7 +43,10 @@ function App() {
         executeNodeWar: apiExecuteNodeWar,
         startBot,
         stopBot,
-        restartBot
+        restartBot,
+        fetchRoles,
+        fetchMemberRoles,
+        updateMemberRoles
     } = useApi();
 
     const menuItems = [
@@ -100,7 +103,12 @@ function App() {
             case 'templates':
                 return <NodewarTemplatesPage />;
             case 'members':
-                return <MembersPage />;
+                return <MembersPage 
+                    fetchRoles={fetchRoles}
+                    fetchMemberRoles={fetchMemberRoles}
+                    updateMemberRoles={updateMemberRoles}
+                    setMessage={setMessage}
+                />;
             case 'settings':
                 return <SettingsPage />;
             default:

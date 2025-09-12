@@ -145,7 +145,7 @@ export function formatNodewarSession(session) {
         templateName: session.template_name || session.templateName || 'Template não identificado',
         tier: session.tier || 1,
         totalSlots: session.total_slots || session.totalSlots || 0,
-        schedule: session.schedule || 'Não agendado',
+        schedule: session.schedule ? new Date(session.schedule).toLocaleString('pt-BR') : 'Não agendado',
         isActive: session.is_active || session.isActive || false,
         createdAt: session.created_at ? new Date(session.created_at).toLocaleString() : 'N/A',
         informativeText: session.informative_text || session.informativeText || ''

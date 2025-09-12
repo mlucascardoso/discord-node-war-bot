@@ -18,7 +18,8 @@ import {
     ListItemText,
     Divider,
     Alert,
-    Paper
+    Paper,
+    TextField
 } from '@mui/material';
 import {
     PlayArrow as PlayIcon,
@@ -54,6 +55,7 @@ const NodeWarPage = ({
     // State management
     const [templates, setTemplates] = useState([]);
     const [selectedTemplate, setSelectedTemplate] = useState('');
+    const [scheduleDateTime, setScheduleDateTime] = useState('');
     const [activeSession, setActiveSession] = useState(null);
     const [sessionMembers, setSessionMembers] = useState([]);
     const [pageLoading, setPageLoading] = useState(false);
@@ -144,12 +146,39 @@ const NodeWarPage = ({
     // Initial load
     useEffect(() => {
         loadData();
+        
+        // Set default schedule to 21h (9 PM) of the next day
+        const defaultSchedule = new Date();
+        defaultSchedule.setDate(defaultSchedule.getDate() + 1); // Next day
+        defaultSchedule.setHours(21); // 21h (9 PM)
+        defaultSchedule.setMinutes(0);
+        defaultSchedule.setSeconds(0);
+        defaultSchedule.setMilliseconds(0);
+        
+        // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+        // datetime-local works with local time, so no timezone conversion needed
+        const year = defaultSchedule.getFullYear();
+        const month = String(defaultSchedule.getMonth() + 1).padStart(2, '0');
+        const day = String(defaultSchedule.getDate()).padStart(2, '0');
+        const hours = String(defaultSchedule.getHours()).padStart(2, '0');
+        const minutes = String(defaultSchedule.getMinutes()).padStart(2, '0');
+        
+        const formattedSchedule = `${year}-${month}-${day}T${hours}:${minutes}`;
+        setScheduleDateTime(formattedSchedule);
     }, [loadData]);
 
     // Create new session
     const handleCreateSession = async () => {
-        if (!selectedTemplate || !selectedChannel) {
-            setErrorsWithTimer(['Selecione um template e um canal']);
+        if (!selectedTemplate || !selectedChannel || !scheduleDateTime) {
+            setErrorsWithTimer(['Selecione um template, um canal e defina a data/hora']);
+            return;
+        }
+
+        // Validate that schedule is in the future
+        const scheduleDate = new Date(scheduleDateTime);
+        const now = new Date();
+        if (scheduleDate <= now) {
+            setErrorsWithTimer(['A data/hora deve ser no futuro']);
             return;
         }
 
@@ -158,7 +187,7 @@ const NodeWarPage = ({
             const sessionData = {
                 templateId: selectedTemplate,
                 channelId: selectedChannel,
-                schedule: new Date().toISOString()
+                schedule: scheduleDate.toISOString()
             };
 
             await createNodewarSession(sessionData);
@@ -313,6 +342,43 @@ const NodeWarPage = ({
                                         </Select>
                                     </FormControl>
 
+                                    <FormControl fullWidth sx={{ mb: 3 }}>
+                                        <TextField
+                                            label="Data e Hora da NodeWar"
+                                            type="datetime-local"
+                                            value={scheduleDateTime}
+                                            onChange={(e) => setScheduleDateTime(e.target.value)}
+                                            InputLabelProps={{
+                                                shrink: true,
+                                                sx: { color: 'rgba(139, 92, 246, 0.7)' }
+                                            }}
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    color: '#FFFFFF',
+                                                    '& fieldset': {
+                                                        borderColor: 'rgba(139, 92, 246, 0.3)',
+                                                    },
+                                                    '&:hover fieldset': {
+                                                        borderColor: '#8B5CF6',
+                                                    },
+                                                    '&.Mui-focused fieldset': {
+                                                        borderColor: '#8B5CF6',
+                                                    },
+                                                },
+                                                '& .MuiInputBase-input': {
+                                                    color: '#FFFFFF',
+                                                },
+                                                '& .MuiSvgIcon-root': {
+                                                    color: '#8B5CF6',
+                                                }
+                                            }}
+                                            helperText="Defina quando a NodeWar deve acontecer"
+                                            FormHelperTextProps={{
+                                                sx: { color: 'rgba(139, 92, 246, 0.6)' }
+                                            }}
+                                        />
+                                    </FormControl>
+
                                     <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                                         <Button
                                             variant="contained"
@@ -333,7 +399,7 @@ const NodeWarPage = ({
                                             variant="contained"
                                             startIcon={loading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : <PlayIcon />}
                                             onClick={handleCreateSession}
-                                            disabled={loading || pageLoading || !selectedTemplate || !selectedChannel}
+                                            disabled={loading || pageLoading || !selectedTemplate || !selectedChannel || !scheduleDateTime}
                                             sx={{
                                                 background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
                                                 boxShadow: '0 4px 16px rgba(139, 92, 246, 0.4)',
@@ -389,7 +455,16 @@ const NodeWarPage = ({
                                         <Box display="flex" alignItems="center" gap={1}>
                                             <ScheduleIcon sx={{ color: '#8B5CF6', fontSize: 20 }} />
                                             <Typography variant="body2" color="text.secondary">
-                                                {formattedSession.createdAt}
+                                                Agendada: {formattedSession.schedule || 'N/A'}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                    
+                                    <Box display="flex" alignItems="center" gap={2} mb={2}>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <InfoIcon sx={{ color: '#8B5CF6', fontSize: 20 }} />
+                                            <Typography variant="body2" color="text.secondary">
+                                                Criada: {formattedSession.createdAt}
                                             </Typography>
                                         </Box>
                                     </Box>

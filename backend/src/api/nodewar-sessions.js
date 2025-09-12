@@ -32,7 +32,7 @@ export const createNodewarSession = async (session) => {
 
 const createSession = async (session) => {
     const nodewarSession = {
-        nodewar_config_id: session.nodewarConfigId,
+        nodewar_config_id: session.templateId,
         schedule: session.schedule,
         is_active: true
     };

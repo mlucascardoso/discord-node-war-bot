@@ -10,7 +10,15 @@ export const getAllNodewarSessions = async () => {
 
 export const getActiveNodewarSession = async () => {
     const result = await sql`
-        SELECT *
+        SELECT
+            t1.id as id,
+            t1.nodewar_config_id as nodewar_config_id,
+            t1.schedule as schedule,
+            t1.is_active as is_active,
+            t1.created_at as created_at,
+            t3.name as template_name,
+            t3.informative_text as informative_text,
+            t2.*
         FROM nodewar_sessions t1
         INNER JOIN nodewar_configs t2 ON t1.nodewar_config_id = t2.id
         INNER JOIN nodewar_types t3 ON t2.nodewar_type_id = t3.id

@@ -45,13 +45,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Catch-all handler: envia de volta o React app (produção)
-if (process.env.NODE_ENV === 'production') {
-    app.get('/*', (req, res) => {
-        const frontendPath = path.join(__dirname, '../../frontend/dist');
-        res.sendFile(path.join(frontendPath, 'index.html'));
-    });
-}
+// TODO: Configurar frontend depois que o backend estiver funcionando
 
 const PORT = process.env.PORT || 3000;
 

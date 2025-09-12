@@ -54,7 +54,7 @@ export const updateNodewarSession = async (session) => {
 const updateSession = async (session) => {
     const nodewarSession = {
         id: session.id,
-        nodewar_config_id: session.nodewarConfigId,
+        nodewar_config_id: session.templateId,
         schedule: session.schedule,
         is_active: true
     };
@@ -63,19 +63,16 @@ const updateSession = async (session) => {
 
 const validateNodewarSessionBasicData = (session) => {
     const errors = [];
-    if (!session.nodewar_config_id) {
-        errors.push('Nodewar config ID é obrigatório');
+    if (!session.templateId) {
+        errors.push('Template de Nodewar é obrigatório');
     }
     if (!session.schedule) {
         errors.push('Schedule é obrigatório');
-    }
-    if (!session.is_active) {
-        errors.push('Is active é obrigatório');
     }
     return { isValid: errors.length === 0, errors };
 };
 
 const hasActiveNodewarSession = async () => {
     const session = await dbGetActiveNodewarSession();
-    return session !== null;
+    return !!session;
 };

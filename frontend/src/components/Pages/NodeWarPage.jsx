@@ -70,11 +70,11 @@ const NodeWarPage = ({
         // Set new errors
         setErrors(newErrors);
 
-        // Set new timer to clear errors after 2 seconds
+        // Set new timer to clear errors after 5 seconds
         const timer = setTimeout(() => {
             setErrors([]);
             setErrorTimer(null);
-        }, 2000);
+        }, 5000);
 
         setErrorTimer(timer);
     }, [errorTimer]);

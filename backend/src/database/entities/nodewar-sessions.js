@@ -24,7 +24,7 @@ export const getNodeWarMembersBySessionId = async (sessionId) => {
             t2.family_name as member_family_name,
             t2.gearscore as member_gearscore,
             t4.name as class_name,
-            t5.name as class_profile_name,
+            t5.profile as class_profile_name,
             t3.name as role_name
         FROM nodewar_session_member_role t1
         INNER JOIN members t2 ON t1.member_id = t2.id
@@ -45,11 +45,11 @@ export const createNodewarSession = async (session) => {
     return result.rows[0];
 };
 
-export const updateNodewarSession = async (session) => {
+export const closeNodewarSession = async () => {
     const result = await sql`
         UPDATE nodewar_sessions
-        SET nodewar_config_id = ${session.nodewar_config_id}, schedule = ${session.schedule}, is_active = ${session.is_active}
-        WHERE id = ${session.id}
+        SET is_active = false
+        WHERE is_active = true
         RETURNING *
     `;
     return result.rows[0];

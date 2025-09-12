@@ -1,5 +1,5 @@
 import express from 'express';
-import { createNodewarSession, getActiveNodewarSession, getAllNodewarSessions, getNodeWarMembersBySessionId, updateNodewarSession } from '../api/nodewar-sessions.js';
+import { closeNodewarSession, createNodewarSession, getActiveNodewarSession, getAllNodewarSessions, getNodeWarMembersBySessionId } from '../api/nodewar-sessions.js';
 
 const router = express.Router();
 
@@ -39,31 +39,18 @@ router.get('/:id/members', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const member = await createNodewarSession(req.body);
-        if (member.success) {
-            return res.status(201).json(member.data);
-        } else {
-            return res.status(400).json({ success: false, error: member.error, details: member.details });
-        }
+        await createNodewarSession(req.body);
+        return res.status(201).json({ success: true, data: 'Sessão criada com sucesso' });
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.post('/close', async (req, res) => {
     try {
-        const { id } = req.params;
-        const member = await updateNodewarSession(id, req.body);
-        if (member.success) {
-            return res.status(200).json(member.data);
-        } else {
-            console.log(member);
-
-            return res.status(400).json({ success: false, error: member.error, details: member.details });
-        }
+        await closeNodewarSession();
+        return res.status(200).json({ success: true, data: 'Sessão encerrada com sucesso' });
     } catch (error) {
-        console.log(error);
-
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }
 });

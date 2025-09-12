@@ -1,9 +1,9 @@
 import {
+    closeNodewarSession as dbCloseNodewarSession,
     createNodewarSession as dbCreateNodewarSession,
     getActiveNodewarSession as dbGetActiveNodewarSession,
     getAllNodewarSessions as dbGetAllNodewarSessions,
-    getNodeWarMembersBySessionId as dbGetNodeWarMembersBySessionId,
-    updateNodewarSession as dbUpdateNodewarSession
+    getNodeWarMembersBySessionId as dbGetNodeWarMembersBySessionId
 } from '../database/entities/nodewar-sessions.js';
 
 export const getAllNodewarSessions = async () => {
@@ -39,26 +39,8 @@ const createSession = async (session) => {
     return dbCreateNodewarSession(nodewarSession);
 };
 
-export const updateNodewarSession = async (session) => {
-    const validation = validateNodewarSessionBasicData(session);
-    if (!validation.isValid) {
-        return { success: false, error: 'Erro de validação', details: validation.errors };
-    }
-    const hasActiveSession = await hasActiveNodewarSession();
-    if (hasActiveSession) {
-        return { success: false, error: 'Já existe uma sessão ativa', details: 'Já existe uma sessão ativa' };
-    }
-    return updateSession(session);
-};
-
-const updateSession = async (session) => {
-    const nodewarSession = {
-        id: session.id,
-        nodewar_config_id: session.templateId,
-        schedule: session.schedule,
-        is_active: true
-    };
-    return dbUpdateNodewarSession(nodewarSession);
+export const closeNodewarSession = async () => {
+    return dbCloseNodewarSession();
 };
 
 const validateNodewarSessionBasicData = (session) => {

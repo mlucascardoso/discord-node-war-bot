@@ -1,6 +1,11 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables for local development
 dotenv.config({ path: '.env.local' });
@@ -16,6 +21,12 @@ import rolesRouter from './routes/roles.js';
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Servir arquivos estáticos do frontend (produção)
+if (process.env.NODE_ENV === 'production') {
+    const frontendPath = path.join(__dirname, '../../frontend/dist');
+    app.use(express.static(frontendPath));
+}
 app.use('/api/classes', classesRouter);
 app.use('/api/class-profiles', classProfilesRouter);
 app.use('/api/members', membersRouter);
@@ -33,6 +44,14 @@ app.get('/health', (req, res) => {
         service: 'discord-node-war-bot'
     });
 });
+
+// Catch-all handler: envia de volta o React app (produção)
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+        const frontendPath = path.join(__dirname, '../../frontend/dist');
+        res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+}
 
 const PORT = process.env.PORT || 3000;
 

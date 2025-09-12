@@ -6,6 +6,7 @@
     "license": "MIT",
     "scripts": {
         "start": "node backend/src/server.js",
+        "build": "cd frontend && yarn install && yarn build",
         "backend:start": "node backend/src/server.js",
         "backend:dev": "nodemon backend/src/server.js",
         "backend:discord": "node backend/src/discord.js",

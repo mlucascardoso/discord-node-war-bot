@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
-import { addMemberToActiveSession, getActiveNodewarSession, getNodeWarMembersBySessionId } from '../../api/nodewar-sessions.js';
+import { addMemberToActiveSession, getActiveNodewarSession, getNodeWarMembersBySessionId, removeMemberFromActiveSession } from '../../api/nodewar-sessions.js';
 
 // ==================== LEGACY CODE - REMOVIDO ====================
 // As configurações agora vêm do banco de dados via sessões ativas
@@ -53,6 +53,31 @@ export const assignUserToNodeWar = async (userName) => {
         }
     } catch (error) {
         console.error('Erro ao atribuir usuário à NodeWar:', error);
+        return {
+            success: false,
+            error: 'Erro interno do sistema'
+        };
+    }
+};
+
+export const cancelUserFromNodeWar = async (userName) => {
+    try {
+        const result = await removeMemberFromActiveSession(userName);
+
+        if (result.success) {
+            return {
+                success: true,
+                memberName: result.memberName,
+                message: result.message
+            };
+        } else {
+            return {
+                success: false,
+                error: result.error
+            };
+        }
+    } catch (error) {
+        console.error('Erro ao cancelar participação na NodeWar:', error);
         return {
             success: false,
             error: 'Erro interno do sistema'
@@ -230,7 +255,8 @@ export const generateNodeWarMessage = async () => {
 export const createNodeWarButtons = () => {
     const row = new ActionRowBuilder();
     const participateButton = new ButtonBuilder().setCustomId('nodewar_participate').setLabel('Participar').setStyle(ButtonStyle.Primary);
+    const cancelButton = new ButtonBuilder().setCustomId('nodewar_cancel').setLabel('Cancelar Participação').setStyle(ButtonStyle.Danger);
 
-    row.addComponents(participateButton);
+    row.addComponents(participateButton, cancelButton);
     return [row];
 };

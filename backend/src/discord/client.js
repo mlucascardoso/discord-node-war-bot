@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { Client, GatewayIntentBits } from 'discord.js';
 
-import { assignUserToNodeWar, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
+import { assignUserToNodeWar, cancelUserFromNodeWar, createNodeWarButtons, generateNodeWarMessage } from './commands/node-war.js';
 
 dotenv.config();
 
@@ -37,7 +37,6 @@ const handleNodeWarParticipate = async (interaction) => {
     try {
         await interaction.deferUpdate();
 
-        // Tenta atribuir usuário à NodeWar usando banco de dados
         const result = await assignUserToNodeWar(userName);
 
         if (result.success) {
@@ -49,14 +48,12 @@ const handleNodeWarParticipate = async (interaction) => {
             console.error(`❌ Erro ao atribuir ${userName}: ${result.error}`);
         }
 
-        // Atualiza a mensagem com dados atualizados do banco
         const updatedMessageData = await generateNodeWarMessage();
         const updatedButtons = createNodeWarButtons();
         await interaction.editReply({ ...updatedMessageData, components: updatedButtons });
     } catch (error) {
         console.error('Erro nodewar:', error.code || error.message);
 
-        // Tenta responder com erro se ainda não respondeu
         try {
             if (!interaction.replied && !interaction.deferred) {
                 await interaction.reply({
@@ -70,14 +67,58 @@ const handleNodeWarParticipate = async (interaction) => {
     }
 };
 
+const handleNodeWarCancel = async (interaction) => {
+    if (interaction.replied || interaction.deferred) {
+        console.warn('Interação já processada');
+        return;
+    }
+
+    const userName = interaction.member.displayName || interaction.user.username;
+
+    try {
+        await interaction.deferUpdate();
+
+        const result = await cancelUserFromNodeWar(userName);
+
+        if (result.success) {
+            console.log(`✅ ${result.message}`);
+        } else {
+            console.error(`❌ Erro ao cancelar ${userName}: ${result.error}`);
+        }
+
+        const updatedMessageData = await generateNodeWarMessage();
+        const updatedButtons = createNodeWarButtons();
+        await interaction.editReply({ ...updatedMessageData, components: updatedButtons });
+    } catch (error) {
+        console.error('Erro ao cancelar nodewar:', error.code || error.message);
+
+        try {
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: '❌ Erro ao processar cancelamento. Tente novamente.',
+                    ephemeral: true
+                });
+            }
+        } catch (replyError) {
+            console.error('Erro ao responder com erro:', replyError);
+        }
+    }
+};
+
 client.on('interactionCreate', async (interaction) => {
     try {
         if (interaction.isChatInputCommand()) {
             await handleSlashCommand(interaction);
-        } else if (interaction.isButton() && interaction.customId === 'nodewar_participate') {
-            handleNodeWarParticipate(interaction).catch((err) => {
-                console.error('Erro silencioso em nodewar:', err.code || err.message);
-            });
+        } else if (interaction.isButton()) {
+            if (interaction.customId === 'nodewar_participate') {
+                handleNodeWarParticipate(interaction).catch((err) => {
+                    console.error('Erro silencioso em nodewar:', err.code || err.message);
+                });
+            } else if (interaction.customId === 'nodewar_cancel') {
+                handleNodeWarCancel(interaction).catch((err) => {
+                    console.error('Erro silencioso ao cancelar nodewar:', err.code || err.message);
+                });
+            }
         }
     } catch (error) {
         console.error('Erro no handler principal:', error.code || error.message);

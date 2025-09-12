@@ -162,11 +162,14 @@ export function formatSessionMember(member) {
 
     return {
         id: member.id,
-        sessionId: member.nodewar_session_id || member.sessionId,
+        sessionId: member.session_id || member.nodewar_session_id || member.sessionId,
         memberId: member.member_id || member.memberId,
-        memberName: member.member_name || member.memberName || member.family_name || 'Membro desconhecido',
+        memberName: member.member_family_name || member.member_name || member.memberName || member.family_name || 'Membro desconhecido',
         roleId: member.role_id || member.roleId,
         roleName: member.role_name || member.roleName || 'Sem role',
+        gearscore: member.member_gearscore || member.gearscore,
+        className: member.class_name || member.className,
+        classProfile: member.class_profile_name || member.classProfile,
         joinedAt: member.created_at ? new Date(member.created_at).toLocaleString() : 'N/A'
     };
 }

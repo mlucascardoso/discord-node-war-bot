@@ -580,10 +580,11 @@ const NodeWarPage = ({
                                                         <ListItem key={member.id || index} sx={{ py: 0.5 }}>
                                                             <ListItemText 
                                                                 primary={member.memberName}
-                                                                secondary={member.joinedAt}
+                                                                secondary={`${member.className || 'N/A'} • ${member.classProfile || 'N/A'} • GS: ${member.gearscore || 'N/A'}`}
                                                                 primaryTypographyProps={{
                                                                     color: '#FFFFFF',
-                                                                    fontSize: '0.9rem'
+                                                                    fontSize: '0.9rem',
+                                                                    fontWeight: 600
                                                                 }}
                                                                 secondaryTypographyProps={{
                                                                     color: 'text.secondary',

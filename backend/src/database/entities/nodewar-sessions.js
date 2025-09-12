@@ -206,6 +206,7 @@ const ROLE_PRIORITY_MAPPING = [
     { nodeWarRole: 'BOMBER', condition: (roles) => roles.some((r) => r.name === 'BOMBER') },
     { nodeWarRole: 'SHAI', condition: (roles) => roles.some((r) => r.name === 'SHAI') },
     { nodeWarRole: 'RANGED', condition: (roles) => roles.some((r) => r.name === 'RANGED') },
+    { nodeWarRole: 'DEFENSE', condition: (roles) => roles.some((r) => r.name === 'DEFENSE') },
     { nodeWarRole: 'FRONTLINE', condition: () => true }
 ];
 

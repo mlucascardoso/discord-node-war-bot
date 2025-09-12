@@ -11,7 +11,9 @@ export const getAllNodewarSessions = async () => {
 export const getActiveNodewarSession = async () => {
     const result = await sql`
         SELECT *
-        FROM nodewar_sessions
+        FROM nodewar_sessions t1
+        INNER JOIN nodewar_configs t2 ON t1.nodewar_config_id = t2.id
+        INNER JOIN nodewar_types t3 ON t2.nodewar_type_id = t3.id
         WHERE is_active = true
     `;
     return result.rows[0];

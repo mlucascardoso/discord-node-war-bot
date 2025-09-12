@@ -147,7 +147,7 @@ export function formatNodewarSession(session) {
         totalSlots: session.total_slots || session.totalSlots || 0,
         schedule: session.schedule ? new Date(session.schedule).toLocaleString('pt-BR') : 'Não agendado',
         isActive: session.is_active || session.isActive || false,
-        createdAt: session.created_at ? new Date(session.created_at).toLocaleString() : 'N/A',
+        createdAt: session.created_at ? new Date(session.created_at).toLocaleString('pt-BR') : 'N/A',
         informativeText: session.informative_text || session.informativeText || ''
     };
 }

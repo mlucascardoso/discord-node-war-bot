@@ -24,7 +24,8 @@ async function loadRouters() {
         membersRouter: (await import('./routes/members.js')).default,
         nodewarSessionsRouter: (await import('./routes/nodewar-sessions.js')).default,
         nodewarTemplatesRouter: (await import('./routes/nodewar-templates.js')).default,
-        rolesRouter: (await import('./routes/roles.js')).default
+        rolesRouter: (await import('./routes/roles.js')).default,
+        weeklyResetRouter: (await import('./routes/weekly-reset.js')).default
     };
 }
 
@@ -51,6 +52,7 @@ async function startServer() {
     app.use('/api/nodewar-templates', routers.nodewarTemplatesRouter);
     app.use('/api/nodewar-sessions', routers.nodewarSessionsRouter);
     app.use('/api/roles', routers.rolesRouter);
+    app.use('/api/weekly-reset', routers.weeklyResetRouter);
 
     app.get('/health', (req, res) => {
         res.status(200).json({

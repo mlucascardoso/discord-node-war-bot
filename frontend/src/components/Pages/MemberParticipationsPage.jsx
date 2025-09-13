@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAllMembers } from '../../api/members.js';
 import { getAllNodewarSessions } from '../../api/nodewar-sessions.js';
+import { getResetPreview, executeWeeklyReset, getLastReset, getMemberPerformance } from '../../api/weekly-reset.js';
 import {
     createBulkParticipations,
     deleteParticipation,
@@ -55,7 +56,8 @@ import {
     Cancel as CancelIcon,
     Schedule as ScheduleIcon,
     Person as PersonIcon,
-    GroupAdd as GroupAddIcon
+    GroupAdd as GroupAddIcon,
+    Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 const MemberParticipationsPage = () => {
@@ -68,6 +70,7 @@ const MemberParticipationsPage = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [loading, setLoading] = useState(true);
     const [formLoading, setFormLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [participationForm, setParticipationForm] = useState({
         memberIds: [],
@@ -80,6 +83,8 @@ const MemberParticipationsPage = () => {
     const [members, setMembers] = useState([]);
     const [sessions, setSessions] = useState([]);
     const [participations, setParticipations] = useState([]);
+    const [lastReset, setLastReset] = useState(null);
+    const [memberPerformance, setMemberPerformance] = useState([]);
     const [stats, setStats] = useState({
         total_participations: 0,
         present_count: 0,
@@ -120,16 +125,20 @@ const MemberParticipationsPage = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [membersData, sessionsData, participationsData, statsData] = await Promise.all([
+            const [membersData, sessionsData, participationsData, statsData, lastResetData, performanceData] = await Promise.all([
                 getAllMembers(),
                 getAllNodewarSessions(),
                 getAllParticipations(),
-                getParticipationStats()
+                getParticipationStats(),
+                getLastReset().catch(() => null), // Não falha se não houver reset anterior
+                getMemberPerformance().catch(() => []) // Não falha se não houver dados
             ]);
             
             setMembers(membersData);
             setSessions(sessionsData);
             setParticipations(participationsData);
+            setLastReset(lastResetData);
+            setMemberPerformance(performanceData);
             setStats({
                 total_participations: parseInt(statsData.total_participations) || 0,
                 present_count: participationsData.filter(p => p.participation_status === 'present').length,
@@ -167,6 +176,46 @@ const MemberParticipationsPage = () => {
                 message: `Erro ao excluir participação: ${error.message}`,
                 severity: 'error'
             });
+        }
+    };
+
+    const handleWeeklyReset = async () => {
+        try {
+            setResetLoading(true);
+            
+            // Primeiro, obter preview do reset
+            const preview = await getResetPreview();
+            
+            const confirmMessage = `Tem certeza que deseja executar o reset semanal?\n\n` +
+                `• ${preview.total_members} membros no total\n` +
+                `• ${preview.members_with_participations} membros com participações\n` +
+                `• ${preview.total_actual_participations} participações serão zeradas\n\n` +
+                `Esta ação não pode ser desfeita!`;
+            
+            if (!window.confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Executar o reset
+            const result = await executeWeeklyReset();
+            
+            setSnackbar({
+                open: true,
+                message: result.message,
+                severity: 'success'
+            });
+            
+            // Recarregar dados
+            await loadData();
+            
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: `Erro ao executar reset semanal: ${error.message}`,
+                severity: 'error'
+            });
+        } finally {
+            setResetLoading(false);
         }
     };
 
@@ -282,13 +331,25 @@ const MemberParticipationsPage = () => {
     return (
         <Box sx={{ p: 3 }}>
             {/* Header */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    Controle de Presença
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                    Registre e acompanhe a participação dos membros nas Node Wars
-                </Typography>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box>
+                    <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                        Controle de Presença
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Registre e acompanhe a participação dos membros nas Node Wars
+                    </Typography>
+                </Box>
+                <Button
+                    variant="outlined"
+                    color="warning"
+                    startIcon={resetLoading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+                    onClick={handleWeeklyReset}
+                    disabled={resetLoading}
+                    sx={{ minWidth: 160 }}
+                >
+                    {resetLoading ? 'Resetando...' : 'Reset Semanal'}
+                </Button>
             </Box>
 
             {/* Dashboard Cards */}
@@ -361,6 +422,41 @@ const MemberParticipationsPage = () => {
                         </CardContent>
                     </Card>
                 </Grid>
+                {lastReset && (
+                    <Grid item xs={12} md={6}>
+                        <Card sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography color="text.secondary" variant="h6">
+                                        Último Reset Semanal
+                                    </Typography>
+                                    <RefreshIcon sx={{ fontSize: 24, color: 'info.main' }} />
+                                </Box>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    {new Date(lastReset.reset_timestamp).toLocaleString('pt-BR')}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Membros Resetados
+                                        </Typography>
+                                        <Typography variant="h6" color="primary.main">
+                                            {lastReset.members_reset}
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Participações Zeradas
+                                        </Typography>
+                                        <Typography variant="h6" color="warning.main">
+                                            {lastReset.total_participations_before || 0}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                )}
             </Grid>
 
             {/* Filtros */}
@@ -412,6 +508,97 @@ const MemberParticipationsPage = () => {
                     </Grid>
                 </Grid>
             </Paper>
+
+            {/* Desempenho dos Membros */}
+            {memberPerformance.length > 0 && (
+                <Paper sx={{ p: 3, mb: 3 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                        Desempenho dos Membros
+                    </Typography>
+                    
+                    <Grid container spacing={2}>
+                        {/* Membros que completaram 100% */}
+                        <Grid item xs={12} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1, mb: 2 }}>
+                                <Typography variant="subtitle1" fontWeight="bold" color="success.dark">
+                                    ✅ Completo (100%)
+                                </Typography>
+                                <Typography variant="body2" color="success.dark" gutterBottom>
+                                    {memberPerformance.filter(m => m.performance_status === 'completo').length} membros
+                                </Typography>
+                                {memberPerformance
+                                    .filter(m => m.performance_status === 'completo')
+                                    .map(member => (
+                                        <Box key={member.member_id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5 }}>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {member.member_name}
+                                            </Typography>
+                                            <Typography variant="caption" color="success.dark">
+                                                {member.actual_participations}/{member.committed_participations}
+                                            </Typography>
+                                        </Box>
+                                    ))
+                                }
+                            </Box>
+                        </Grid>
+
+                        {/* Membros com participação parcial */}
+                        <Grid item xs={12} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, mb: 2 }}>
+                                <Typography variant="subtitle1" fontWeight="bold" color="warning.dark">
+                                    ⚠️ Parcial
+                                </Typography>
+                                <Typography variant="body2" color="warning.dark" gutterBottom>
+                                    {memberPerformance.filter(m => m.performance_status === 'parcial').length} membros
+                                </Typography>
+                                {memberPerformance
+                                    .filter(m => m.performance_status === 'parcial')
+                                    .map(member => (
+                                        <Box key={member.member_id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5 }}>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {member.member_name}
+                                            </Typography>
+                                            <Box sx={{ textAlign: 'right' }}>
+                                                <Typography variant="caption" color="warning.dark">
+                                                    {member.actual_participations}/{member.committed_participations}
+                                                </Typography>
+                                                <Typography variant="caption" color="warning.dark" sx={{ display: 'block' }}>
+                                                    ({member.completion_percentage}%)
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    ))
+                                }
+                            </Box>
+                        </Grid>
+
+                        {/* Membros que não participaram */}
+                        <Grid item xs={12} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'error.light', borderRadius: 1, mb: 2 }}>
+                                <Typography variant="subtitle1" fontWeight="bold" color="error.dark">
+                                    ❌ Não Participou
+                                </Typography>
+                                <Typography variant="body2" color="error.dark" gutterBottom>
+                                    {memberPerformance.filter(m => m.performance_status === 'não_participou').length} membros
+                                </Typography>
+                                {memberPerformance
+                                    .filter(m => m.performance_status === 'não_participou')
+                                    .map(member => (
+                                        <Box key={member.member_id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5 }}>
+                                            <Typography variant="body2" fontWeight="medium">
+                                                {member.member_name}
+                                            </Typography>
+                                            <Typography variant="caption" color="error.dark">
+                                                0/{member.committed_participations}
+                                            </Typography>
+                                        </Box>
+                                    ))
+                                }
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Paper>
+            )}
 
             {/* Tabela */}
             <Paper>

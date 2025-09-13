@@ -158,6 +158,15 @@ const validateNodeWarConfigs = (nodeWarTemplateData) => {
     if (nodeWarTemplateData.elephantSlots < 0 || !Number.isInteger(nodeWarTemplateData.elephantSlots)) {
         errors.push('Slots de elephant são obrigatórios');
     }
+    if ((nodeWarTemplateData.strikerSlots || 0) < 0 || !Number.isInteger(nodeWarTemplateData.strikerSlots || 0)) {
+        errors.push('Slots de striker devem ser um número válido');
+    }
+    if ((nodeWarTemplateData.blocoSlots || 0) < 0 || !Number.isInteger(nodeWarTemplateData.blocoSlots || 0)) {
+        errors.push('Slots de bloco devem ser um número válido');
+    }
+    if ((nodeWarTemplateData.dosaSlots || 0) < 0 || !Number.isInteger(nodeWarTemplateData.dosaSlots || 0)) {
+        errors.push('Slots de dosa devem ser um número válido');
+    }
     if (!nodeWarTemplateData.totalSlots || nodeWarTemplateData.totalSlots < 0 || !Number.isInteger(nodeWarTemplateData.totalSlots)) {
         errors.push('Total de slots são obrigatórios');
     }
@@ -188,7 +197,10 @@ const validateNodeWarMaxSlots = (nodeWarTemplateData) => {
         nodeWarTemplateData.flagSlots +
         nodeWarTemplateData.defenseSlots +
         nodeWarTemplateData.callerSlots +
-        nodeWarTemplateData.elephantSlots;
+        nodeWarTemplateData.elephantSlots +
+        (nodeWarTemplateData.strikerSlots || 0) +
+        (nodeWarTemplateData.blocoSlots || 0) +
+        (nodeWarTemplateData.dosaSlots || 0);
     if (allRoleSlots !== nodeWarTemplateData.totalSlots) {
         errors.push('Total de slots deve ser igual ao total de slots de todas as roles');
     }

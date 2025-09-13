@@ -8,8 +8,8 @@ WHERE name = 'waitlist';
 
 -- 2. Adicionar novas roles STRIKER, BLOCO e DOSA
 INSERT INTO roles (name, description, emoji, created_at) VALUES
-('STRIKER', 'Especialista em combate corpo a corpo', '👊', NOW()),
-('BLOCO', 'Especialista em bloqueio e defesa', '🛡️', NOW()),
+('STRIKER', 'Especialista em combate corpo a corpo', '🥊', NOW()),
+('BLOCO', 'Especialista em bloqueio e defesa', '🧱', NOW()),
 ('DOSA', 'Especialista em suporte e controle', '🚬', NOW());
 
 -- 3. Adicionar colunas para slots das novas roles na tabela nodewar_configs

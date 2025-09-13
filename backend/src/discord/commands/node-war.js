@@ -180,8 +180,8 @@ const createRoleMappings = (sessionData) => {
         FRONTLINE: '⚔️',
         PA: '🗡️',
         DEFENSE: '🛡️',
-        STRIKER: '👊',
-        BLOCO: '🛡️',
+        STRIKER: '🥊',
+        BLOCO: '🧱',
         DOSA: '🚬',
         WAITLIST: '⏳'
     };

@@ -52,8 +52,8 @@ INSERT INTO roles (id, name, description, emoji, created_at) VALUES
 (8, 'RANGED', 'Combate à distância', '🏹', '2025-09-09T02:27:28.114Z'),
 (9, 'FRONTLINE', 'Combate corpo a corpo', '⚔️', '2025-09-09T02:27:28.114Z'),
 (10, 'WAITLIST', 'Lista de espera', '⏳', '2025-09-12T01:04:52.441Z'),
-(11, 'STRIKER', 'Especialista em combate corpo a corpo', '👊', '2025-09-13T12:00:00.000Z'),
-(12, 'BLOCO', 'Especialista em bloqueio e defesa', '🛡️', '2025-09-13T12:00:00.000Z'),
+(11, 'STRIKER', 'Especialista em combate corpo a corpo', '🥊', '2025-09-13T12:00:00.000Z'),
+(12, 'BLOCO', 'Especialista em bloqueio e defesa', '🧱', '2025-09-13T12:00:00.000Z'),
 (13, 'DOSA', 'Especialista em suporte e controle', '🚬', '2025-09-13T12:00:00.000Z');
 
 -- INSERIR DADOS - MEMBERS

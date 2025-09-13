@@ -284,8 +284,8 @@ const NodewarTemplatesPage = () => {
         { key: 'defense_slots', label: 'Defense', icon: '🛡️' },
         { key: 'caller_slots', label: 'Caller', icon: '🎙️' },
         { key: 'elephant_slots', label: 'Elephant', icon: '🐘' },
-        { key: 'striker_slots', label: 'Striker', icon: '👊' },
-        { key: 'bloco_slots', label: 'Bloco', icon: '🛡️' },
+        { key: 'striker_slots', label: 'Striker', icon: '🥊' },
+        { key: 'bloco_slots', label: 'Bloco', icon: '🧱' },
         { key: 'dosa_slots', label: 'Dosa', icon: '🚬' }
     ];
 

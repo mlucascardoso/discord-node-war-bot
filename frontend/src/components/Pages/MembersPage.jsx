@@ -33,7 +33,8 @@ import {
     Snackbar,
     OutlinedInput,
     ListItemText,
-    Checkbox
+    Checkbox,
+    Autocomplete
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -640,18 +641,25 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Classe</InputLabel>
-                                <Select
-                                    value={memberForm.classId}
-                                    onChange={(e) => handleFormChange('classId', e.target.value)}
-                                    label="Classe"
-                                >
-                                    {classes.map(cls => (
-                                        <MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <Autocomplete
+                                options={classes}
+                                getOptionLabel={(option) => option.name}
+                                value={classes.find(cls => cls.id === memberForm.classId) || null}
+                                onChange={(event, newValue) => {
+                                    handleFormChange('classId', newValue ? newValue.id : '');
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Classe"
+                                        placeholder="Digite para pesquisar uma classe..."
+                                    />
+                                )}
+                                noOptionsText="Nenhuma classe encontrada"
+                                clearText="Limpar"
+                                openText="Abrir"
+                                closeText="Fechar"
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
@@ -707,26 +715,37 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                             </FormControl>
                         </Grid>
                         <Grid item xs={12}>
-                            <FormControl fullWidth>
-                                <InputLabel>Roles de Combate</InputLabel>
-                                <Select
-                                    multiple
-                                    value={memberForm.roleIds || []}
-                                    onChange={(e) => handleFormChange('roleIds', e.target.value)}
-                                    input={<OutlinedInput label="Roles de Combate" />}
-                                    renderValue={(selected) => {
-                                        const selectedRoles = roles.filter(role => selected.includes(role.id));
-                                        return selectedRoles.map(role => `${role.emoji} ${role.name}`).join(', ');
-                                    }}
-                                >
-                                    {roles.map((role) => (
-                                        <MenuItem key={role.id} value={role.id}>
-                                            <Checkbox checked={memberForm.roleIds?.includes(role.id) || false} />
-                                            <ListItemText primary={`${role.emoji} ${role.name}`} />
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <Autocomplete
+                                multiple
+                                options={roles}
+                                getOptionLabel={(option) => `${option.emoji} ${option.name}`}
+                                value={roles.filter(role => memberForm.roleIds?.includes(role.id)) || []}
+                                onChange={(event, newValue) => {
+                                    const selectedIds = newValue.map(role => role.id);
+                                    handleFormChange('roleIds', selectedIds);
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Roles de Combate"
+                                        placeholder="Digite para pesquisar e selecionar múltiplos roles..."
+                                    />
+                                )}
+                                renderTags={(value, getTagProps) =>
+                                    value.map((option, index) => (
+                                        <Chip
+                                            variant="outlined"
+                                            label={`${option.emoji} ${option.name}`}
+                                            {...getTagProps({ index })}
+                                            key={option.id}
+                                        />
+                                    ))
+                                }
+                                noOptionsText="Nenhum role encontrado"
+                                clearText="Limpar todos"
+                                openText="Abrir"
+                                closeText="Fechar"
+                            />
                         </Grid>
                     </Grid>
                 </DialogContent>

@@ -246,13 +246,7 @@ export const processParticipationImages = async (imageFiles, customDate = null) 
             try {
                 const {
                     data: { text }
-                } = await Tesseract.recognize(file.buffer, 'por', {
-                    logger: (m) => {
-                        if (m.status === 'recognizing text') {
-                            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-                        }
-                    }
-                });
+                } = await Tesseract.recognize(file.buffer, 'por');
                 const extractedText = text.toLowerCase();
                 const foundNames = [];
 
@@ -293,10 +287,8 @@ export const processParticipationImages = async (imageFiles, customDate = null) 
             if (img.extractedText) {
                 const originalText = img.extractedText;
                 const words = originalText.split(/\s+/).filter((word) => word.length > 3 && word.match(/^[A-Z][a-zA-Z]*$/));
-
                 words.forEach((word) => {
                     const wordLower = word.toLowerCase();
-
                     const isRecognizedMember = members.some((member) => {
                         const memberNameLower = member.family_name.toLowerCase();
                         return memberNameLower.includes(wordLower) || wordLower.includes(memberNameLower);

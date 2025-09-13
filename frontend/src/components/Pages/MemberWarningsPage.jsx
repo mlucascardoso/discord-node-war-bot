@@ -329,6 +329,7 @@ const MemberWarningsPage = () => {
                                 <TableCell>Membro</TableCell>
                                 <TableCell align="center">Tipo</TableCell>
                                 <TableCell>Descrição</TableCell>
+                                <TableCell align="center">Data</TableCell>
                                 <TableCell align="center">Ações</TableCell>
                             </TableRow>
                         </TableHead>
@@ -366,6 +367,17 @@ const MemberWarningsPage = () => {
                                                 {warning.description}
                                             </Typography>
                                         </Tooltip>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Typography variant="body2">
+                                            {new Date(warning.issued_at).toLocaleDateString('pt-BR')}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {new Date(warning.issued_at).toLocaleTimeString('pt-BR', { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit' 
+                                            })}
+                                        </Typography>
                                     </TableCell>
                                     <TableCell align="center">
                                         <Tooltip title="Excluir">

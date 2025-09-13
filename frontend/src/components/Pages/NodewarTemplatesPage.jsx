@@ -401,13 +401,18 @@ const NodewarTemplatesPage = () => {
                                     </Typography>
 
                                     <Grid container spacing={1}>
-                                        {Object.entries(formatted.slots).map(([role, count]) => {
-                                            if (count === 0) return null;
-                                            const field = slotFields.find(f => f.key === `${role}_slots` || f.key === role);
+                                        {slotFields.map((field) => {
+                                            const roleKey = field.key.replace('_slots', '');
+                                            const count = formatted.slots[roleKey] || 0;
+                                            
                                             return (
-                                                <Grid item xs={6} key={role}>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {field?.icon} {field?.label || role}: {count}
+                                                <Grid item xs={6} key={field.key}>
+                                                    <Typography 
+                                                        variant="caption" 
+                                                        color={count > 0 ? "text.primary" : "text.disabled"}
+                                                        sx={{ opacity: count > 0 ? 1 : 0.6 }}
+                                                    >
+                                                        {field.icon} {field.label}: {count}
                                                     </Typography>
                                                 </Grid>
                                             );

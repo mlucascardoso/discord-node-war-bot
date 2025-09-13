@@ -363,7 +363,7 @@ export const processParticipationImages = async (imageFiles, customDate = null) 
         processedImages.forEach((img) => {
             if (img.extractedText) {
                 const originalText = img.extractedText;
-                const words = originalText.split(/\s+/).filter((word) => word.length > 3 && word.match(/^[A-Z][a-zA-Z]*$/));
+                const words = originalText.split(/\s+/).filter((word) => word.length > 3 && word.match(/^[A-Z][a-zA-Z0-9]*$/));
                 words.forEach((word) => {
                     const wordLower = word.toLowerCase();
                     const isRecognizedMember = members.some((member) => {

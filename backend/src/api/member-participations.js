@@ -14,6 +14,40 @@ import {
 } from '../database/entities/member-participations.js';
 import { getAllMembers, getMemberById } from '../database/entities/members.js';
 
+const calculateStringSimilarity = (str1, str2) => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+
+    if (longer.length === 0) return 1.0;
+
+    const distance = levenshteinDistance(longer, shorter);
+    return (longer.length - distance) / longer.length;
+};
+
+const levenshteinDistance = (str1, str2) => {
+    const matrix = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+            }
+        }
+    }
+
+    return matrix[str2.length][str1.length];
+};
+
 export const getAllParticipations = async () => {
     return dbGetAllParticipations();
 };
@@ -242,35 +276,78 @@ export const processParticipationImages = async (imageFiles, customDate = null) 
         const members = await getAllMembers();
         const recognizedNames = new Set();
         const processedImages = [];
+
         for (const file of imageFiles) {
             try {
                 const {
                     data: { text }
                 } = await Tesseract.recognize(file.buffer, 'por');
-                const extractedText = text.toLowerCase();
+
+                console.log(`\n=== Processando imagem: ${file.originalname} ===`);
+                console.log('Texto extraído:', text.substring(0, 300));
+
                 const foundNames = [];
+                const extractedText = text.toLowerCase();
+                const cleanedText = extractedText.replace(/[^\w\sáàâãéèêíìîóòôõúùûç]/gi, ' ');
+                const words = cleanedText.split(/\s+/).filter((word) => word.length >= 3);
+
+                console.log('Palavras extraídas:', words.slice(0, 20));
 
                 for (const member of members) {
-                    const memberNameLower = member.family_name.toLowerCase();
+                    const memberName = member.family_name;
+                    const memberNameLower = memberName.toLowerCase();
+                    const memberWords = memberNameLower.split(/\s+/).filter((word) => word.length >= 3);
+
+                    let matchScore = 0;
+                    let totalPossibleScore = memberWords.length;
+
+                    if (totalPossibleScore === 0) continue;
 
                     if (extractedText.includes(memberNameLower)) {
-                        foundNames.push(member.family_name);
+                        console.log(`✓ Match exato encontrado: ${memberName}`);
+                        foundNames.push(memberName);
                         recognizedNames.add(member.id);
                         continue;
                     }
 
-                    const words = extractedText.split(/\s+/);
-                    const memberWords = memberNameLower.split(/\s+/);
+                    for (const memberWord of memberWords) {
+                        if (memberWord.length < 3) continue;
 
-                    const allWordsFound = memberWords.every((memberWord) => words.some((word) => word.includes(memberWord) || memberWord.includes(word)));
+                        let bestWordMatch = 0;
+                        for (const extractedWord of words) {
+                            const similarity = calculateStringSimilarity(memberWord, extractedWord);
 
-                    if (allWordsFound && memberWords.length > 0) {
-                        foundNames.push(member.family_name);
+                            if (similarity >= 0.8) {
+                                bestWordMatch = 1;
+                                break;
+                            } else if (similarity >= 0.6 && memberWord.length >= 4) {
+                                bestWordMatch = Math.max(bestWordMatch, 0.7);
+                            } else if (extractedWord.includes(memberWord) && memberWord.length >= 4) {
+                                bestWordMatch = Math.max(bestWordMatch, 0.5);
+                            }
+                        }
+                        matchScore += bestWordMatch;
+                    }
+
+                    const finalScore = matchScore / totalPossibleScore;
+                    console.log(`Membro: ${memberName} | Score: ${finalScore.toFixed(2)} | Palavras: ${memberWords.join(', ')}`);
+
+                    if (finalScore >= 0.7) {
+                        console.log(`✓ Match por similaridade: ${memberName} (score: ${finalScore.toFixed(2)})`);
+                        foundNames.push(memberName);
                         recognizedNames.add(member.id);
                     }
                 }
-                processedImages.push({ filename: file.originalname, foundNames, extractedText: text.substring(0, 200) });
+
+                console.log(`Nomes encontrados na imagem: ${foundNames.join(', ')}`);
+                processedImages.push({
+                    filename: file.originalname,
+                    foundNames,
+                    extractedText: text.substring(0, 200),
+                    wordCount: words.length
+                });
             } catch (ocrError) {
+                console.error(`Erro OCR na imagem ${file.originalname}:`, ocrError.message);
                 processedImages.push({ filename: file.originalname, foundNames: [], error: ocrError.message });
             }
         }

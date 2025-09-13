@@ -74,6 +74,9 @@ CREATE TABLE IF NOT EXISTS nodewar_configs (
     defense_slots INTEGER DEFAULT 0,
     caller_slots INTEGER DEFAULT 0,
     elephant_slots INTEGER DEFAULT 0,
+    striker_slots INTEGER DEFAULT 0,
+    bloco_slots INTEGER DEFAULT 0,
+    dosa_slots INTEGER DEFAULT 0,
     waitlist INTEGER DEFAULT 0,
     total_slots INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

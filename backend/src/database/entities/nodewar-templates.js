@@ -63,7 +63,7 @@ export const createNodeWarConfig = async (nodeWarConfig) => {
         INSERT INTO
             nodewar_configs(
                 nodewar_type_id, bomber_slots, frontline_slots, ranged_slots, shai_slots, pa_slots, flag_slots, 
-                defense_slots, caller_slots, elephant_slots, waitlist, total_slots
+                defense_slots, caller_slots, elephant_slots, striker_slots, bloco_slots, dosa_slots, waitlist, total_slots
             )
         VALUES (
             ${nodeWarConfig.nodewar_type_id},
@@ -76,6 +76,9 @@ export const createNodeWarConfig = async (nodeWarConfig) => {
             ${nodeWarConfig.defense_slots},
             ${nodeWarConfig.caller_slots},
             ${nodeWarConfig.elephant_slots},
+            ${nodeWarConfig.striker_slots},
+            ${nodeWarConfig.bloco_slots},
+            ${nodeWarConfig.dosa_slots},
             ${nodeWarConfig.waitlist},
             ${nodeWarConfig.total_slots}
         ) RETURNING *`;
@@ -97,6 +100,9 @@ export const updateNodeWarConfig = async (id, nodeWarConfig) => {
             defense_slots = ${nodeWarConfig.defense_slots},
             caller_slots = ${nodeWarConfig.caller_slots},
             elephant_slots = ${nodeWarConfig.elephant_slots},
+            striker_slots = ${nodeWarConfig.striker_slots},
+            bloco_slots = ${nodeWarConfig.bloco_slots},
+            dosa_slots = ${nodeWarConfig.dosa_slots},
             waitlist = ${nodeWarConfig.waitlist},
             total_slots = ${nodeWarConfig.total_slots}
         WHERE

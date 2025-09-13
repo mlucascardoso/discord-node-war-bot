@@ -195,9 +195,12 @@ export const getAvailableSlotsBySession = async (sessionId) => {
         DEFENSE: Math.max(0, config.defense_slots - (participantCounts.DEFENSE || 0)),
         CALLER: Math.max(0, config.caller_slots - (participantCounts.CALLER || 0)),
         ELEFANTE: Math.max(0, config.elephant_slots - (participantCounts.ELEFANTE || 0)),
-        HWACHA: Math.max(0, config.ranged_slots - (participantCounts.HWACHA || 0)),
+        HWACHA: Math.max(0, config.hwacha_slots - (participantCounts.HWACHA || 0)),
         FLAME: Math.max(0, config.bomber_slots - (participantCounts.FLAME || 0)),
-        waitlist: 9999
+        STRIKER: Math.max(0, config.striker_slots - (participantCounts.STRIKER || 0)),
+        BLOCO: Math.max(0, config.bloco_slots - (participantCounts.BLOCO || 0)),
+        DOSA: Math.max(0, config.dosa_slots - (participantCounts.DOSA || 0)),
+        WAITLIST: 9999
     };
 };
 
@@ -214,6 +217,9 @@ const ROLE_PRIORITY_MAPPING = [
     { nodeWarRole: 'SHAI', condition: (roles) => roles.some((r) => r.name === 'SHAI') },
     { nodeWarRole: 'RANGED', condition: (roles) => roles.some((r) => r.name === 'RANGED') },
     { nodeWarRole: 'DEFENSE', condition: (roles) => roles.some((r) => r.name === 'DEFENSE') },
+    { nodeWarRole: 'BLOCO', condition: (roles) => roles.some((r) => r.name === 'BLOCO') },
+    { nodeWarRole: 'STRIKER', condition: (roles) => roles.some((r) => r.name === 'STRIKER') },
+    { nodeWarRole: 'DOSA', condition: (roles) => roles.some((r) => r.name === 'DOSA') },
     { nodeWarRole: 'FRONTLINE', condition: () => true }
 ];
 
@@ -240,7 +246,7 @@ export const determineNodeWarRole = async (memberRoles, availableSlots) => {
     }
 
     // Se não encontrou nenhuma, vai para waitlist
-    return await getRoleData('waitlist');
+    return await getRoleData('WAITLIST');
 };
 
 /**
@@ -278,7 +284,7 @@ export const addMemberToSession = async (sessionId, familyName) => {
             memberName: familyName,
             roleName: assignedRole.name,
             roleEmoji: assignedRole.emoji,
-            isWaitlist: assignedRole.name === 'waitlist'
+            isWaitlist: assignedRole.name === 'WAITLIST'
         };
     } catch (error) {
         console.error(`❌ Erro ao adicionar ${familyName}:`, error.message);

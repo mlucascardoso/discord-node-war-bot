@@ -57,6 +57,9 @@ const createNodeWarConfig = async (nodeWarTypeId, nodeWarTemplateData) => {
         defense_slots: nodeWarTemplateData.defenseSlots,
         caller_slots: nodeWarTemplateData.callerSlots,
         elephant_slots: nodeWarTemplateData.elephantSlots,
+        striker_slots: nodeWarTemplateData.strikerSlots || 0,
+        bloco_slots: nodeWarTemplateData.blocoSlots || 0,
+        dosa_slots: nodeWarTemplateData.dosaSlots || 0,
         waitlist: 9999,
         total_slots: nodeWarTemplateData.totalSlots
     };
@@ -103,6 +106,9 @@ const updateNodeWarConfig = async (nodeWarTypeId, nodeWarConfigId, nodeWarTempla
         defense_slots: nodeWarTemplateData.defenseSlots,
         caller_slots: nodeWarTemplateData.callerSlots,
         elephant_slots: nodeWarTemplateData.elephantSlots,
+        striker_slots: nodeWarTemplateData.strikerSlots || 0,
+        bloco_slots: nodeWarTemplateData.blocoSlots || 0,
+        dosa_slots: nodeWarTemplateData.dosaSlots || 0,
         waitlist: 9999,
         total_slots: nodeWarTemplateData.totalSlots
     };

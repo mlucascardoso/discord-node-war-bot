@@ -51,7 +51,10 @@ INSERT INTO roles (id, name, description, emoji, created_at) VALUES
 (7, 'SHAI', 'Suporte e cura', '🥁', '2025-09-09T02:27:28.114Z'),
 (8, 'RANGED', 'Combate à distância', '🏹', '2025-09-09T02:27:28.114Z'),
 (9, 'FRONTLINE', 'Combate corpo a corpo', '⚔️', '2025-09-09T02:27:28.114Z'),
-(10, 'waitlist', 'Lista de espera', '⏳', '2025-09-12T01:04:52.441Z');
+(10, 'WAITLIST', 'Lista de espera', '⏳', '2025-09-12T01:04:52.441Z'),
+(11, 'STRIKER', 'Especialista em combate corpo a corpo', '👊', '2025-09-13T12:00:00.000Z'),
+(12, 'BLOCO', 'Especialista em bloqueio e defesa', '🛡️', '2025-09-13T12:00:00.000Z'),
+(13, 'DOSA', 'Especialista em suporte e controle', '🚬', '2025-09-13T12:00:00.000Z');
 
 -- INSERIR DADOS - MEMBERS
 INSERT INTO members (id, family_name, class_id, class_profile_id, level, ap, awakened_ap, dp, gearscore, is_active, created_at, updated_at, guild_id) VALUES
@@ -61,8 +64,8 @@ INSERT INTO members (id, family_name, class_id, class_profile_id, level, ap, awa
 INSERT INTO nodewar_types (id, name, informative_text, tier, created_at) VALUES (1, 'Tier 1', 'NODE WAR\n🏰 NODE TIER 1 — 25 VAGAS\n\n✅ CANAIS PARA CONFIRMAR SUA PARTICIPAÇÃO\n(Balenos 1 / Serendia 1)\n\n⏰ O servidor onde acontecerá a guerra será anunciado às 20:45\n\n➡️ Todos os membros devem estar presentes no Discord até esse horário.\n\n🔁 Atenção: A partir das 20:00 está liberado o roubo de vaga.', 1, '2025-09-10T03:13:10.711Z');
 
 -- INSERIR DADOS - NODEWAR_CONFIGS
-INSERT INTO nodewar_configs (id, nodewar_type_id, bomber_slots, frontline_slots, ranged_slots, shai_slots, pa_slots, flag_slots, defense_slots, caller_slots, elephant_slots, waitlist, total_slots, created_at) VALUES
-(1, 1, 2, 6, 7, 2, 0, 1, 3, 3, 1, 9999, 25, '2025-09-10T03:17:51.919Z');
+INSERT INTO nodewar_configs (id, nodewar_type_id, bomber_slots, frontline_slots, ranged_slots, shai_slots, pa_slots, flag_slots, defense_slots, caller_slots, elephant_slots, striker_slots, bloco_slots, dosa_slots, waitlist, total_slots, created_at) VALUES
+(1, 1, 2, 6, 7, 2, 0, 1, 3, 3, 1, 2, 2, 2, 9999, 25, '2025-09-10T03:17:51.919Z');
 
 -- Atualizar sequências para evitar conflitos futuros
 SELECT setval('classes_id_seq', (SELECT MAX(id) FROM classes));

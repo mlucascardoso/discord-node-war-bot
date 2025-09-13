@@ -143,6 +143,9 @@ const NodewarTemplatesPage = () => {
             defenseSlots: data.defense_slots,
             callerSlots: data.caller_slots,
             elephantSlots: data.elephant_slots,
+            strikerSlots: data.striker_slots,
+            blocoSlots: data.bloco_slots,
+            dosaSlots: data.dosa_slots,
             totalSlots: calculateTotalSlots(data)
         };
     };
@@ -280,7 +283,10 @@ const NodewarTemplatesPage = () => {
         { key: 'flag_slots', label: 'Flag', icon: '🚩' },
         { key: 'defense_slots', label: 'Defense', icon: '🛡️' },
         { key: 'caller_slots', label: 'Caller', icon: '🎙️' },
-        { key: 'elephant_slots', label: 'Elephant', icon: '🐘' }
+        { key: 'elephant_slots', label: 'Elephant', icon: '🐘' },
+        { key: 'striker_slots', label: 'Striker', icon: '👊' },
+        { key: 'bloco_slots', label: 'Bloco', icon: '🛡️' },
+        { key: 'dosa_slots', label: 'Dosa', icon: '🚬' }
     ];
 
     return (

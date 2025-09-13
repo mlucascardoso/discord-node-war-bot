@@ -115,10 +115,26 @@ export function calculateTotalSlots(slots) {
         flag_slots = 0,
         defense_slots = 0,
         caller_slots = 0,
-        elephant_slots = 0
+        elephant_slots = 0,
+        striker_slots = 0,
+        bloco_slots = 0,
+        dosa_slots = 0
     } = slots;
 
-    return bomber_slots + frontline_slots + ranged_slots + shai_slots + pa_slots + flag_slots + defense_slots + caller_slots + elephant_slots;
+    return (
+        bomber_slots +
+        frontline_slots +
+        ranged_slots +
+        shai_slots +
+        pa_slots +
+        flag_slots +
+        defense_slots +
+        caller_slots +
+        elephant_slots +
+        striker_slots +
+        bloco_slots +
+        dosa_slots
+    );
 }
 
 /**
@@ -136,7 +152,20 @@ export function validateNodewarTemplate(templateData) {
     }
 
     // Slot validations
-    const slots = ['bomber_slots', 'frontline_slots', 'ranged_slots', 'shai_slots', 'pa_slots', 'flag_slots', 'defense_slots', 'caller_slots', 'elephant_slots'];
+    const slots = [
+        'bomber_slots',
+        'frontline_slots',
+        'ranged_slots',
+        'shai_slots',
+        'pa_slots',
+        'flag_slots',
+        'defense_slots',
+        'caller_slots',
+        'elephant_slots',
+        'striker_slots',
+        'bloco_slots',
+        'dosa_slots'
+    ];
 
     slots.forEach((slot) => {
         const value = Number(templateData[slot]);
@@ -201,6 +230,9 @@ export function getDefaultTemplateData() {
         flag_slots: 1,
         defense_slots: 0,
         caller_slots: 1,
-        elephant_slots: 1
+        elephant_slots: 1,
+        striker_slots: 0,
+        bloco_slots: 0,
+        dosa_slots: 0
     };
 }

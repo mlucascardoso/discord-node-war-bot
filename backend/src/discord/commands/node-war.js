@@ -162,7 +162,10 @@ const createRoleMappings = (sessionData) => {
         CALLER: sessionData.caller_slots,
         ELEFANTE: sessionData.elephant_slots,
         HWACHA: sessionData.ranged_slots,
-        FLAME: sessionData.bomber_slots
+        FLAME: sessionData.bomber_slots,
+        STRIKER: sessionData.striker_slots,
+        BLOCO: sessionData.bloco_slots,
+        DOSA: sessionData.dosa_slots
     };
 
     const roleEmojis = {
@@ -176,7 +179,11 @@ const createRoleMappings = (sessionData) => {
         RANGED: '🏹',
         FRONTLINE: '⚔️',
         PA: '🗡️',
-        DEFENSE: '🛡️'
+        DEFENSE: '🛡️',
+        STRIKER: '👊',
+        BLOCO: '🛡️',
+        DOSA: '🚬',
+        WAITLIST: '⏳'
     };
 
     return { roleSlots, roleEmojis };
@@ -235,7 +242,7 @@ export const generateNodeWarMessage = async () => {
         addRoleFieldsToEmbed(embed, roleSlots, roleEmojis, roleParticipants);
 
         // Adiciona waitlist se houver
-        const waitlistParticipants = roleParticipants.waitlist || [];
+        const waitlistParticipants = roleParticipants.WAITLIST || [];
         if (waitlistParticipants.length > 0) {
             let waitlistText = '';
             waitlistParticipants.forEach((p) => {

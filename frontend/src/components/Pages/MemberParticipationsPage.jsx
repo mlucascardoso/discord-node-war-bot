@@ -414,11 +414,10 @@ const MemberParticipationsPage = () => {
                     <Grid item xs={12} md={6}>
                         <Card sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
                             <CardContent>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                <Box sx={{ mb: 1 }}>
                                     <Typography color="text.secondary" variant="h6">
                                         Último Reset Semanal
                                     </Typography>
-                                    <RefreshIcon sx={{ fontSize: 24, color: 'info.main' }} />
                                 </Box>
                                 <Typography variant="body2" color="text.secondary" gutterBottom>
                                     {new Date(lastReset.reset_timestamp).toLocaleString('pt-BR')}

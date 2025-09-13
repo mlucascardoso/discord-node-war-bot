@@ -331,25 +331,13 @@ const MemberParticipationsPage = () => {
     return (
         <Box sx={{ p: 3 }}>
             {/* Header */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Box>
-                    <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                        Controle de Presença
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary">
-                        Registre e acompanhe a participação dos membros nas Node Wars
-                    </Typography>
-                </Box>
-                <Button
-                    variant="outlined"
-                    color="warning"
-                    startIcon={resetLoading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
-                    onClick={handleWeeklyReset}
-                    disabled={resetLoading}
-                    sx={{ minWidth: 160 }}
-                >
-                    {resetLoading ? 'Resetando...' : 'Reset Semanal'}
-                </Button>
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    Controle de Presença
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Registre e acompanhe a participação dos membros nas Node Wars
+                </Typography>
             </Box>
 
             {/* Dashboard Cards */}
@@ -693,7 +681,7 @@ const MemberParticipationsPage = () => {
                 />
             </Paper>
 
-            {/* FAB */}
+            {/* Botões Flutuantes */}
             <Fab
                 color="primary"
                 aria-label="add"
@@ -701,6 +689,16 @@ const MemberParticipationsPage = () => {
                 onClick={handleOpenDialog}
             >
                 <GroupAddIcon />
+            </Fab>
+            
+            <Fab
+                color="warning"
+                aria-label="reset"
+                sx={{ position: 'fixed', bottom: 16, right: 88 }}
+                onClick={handleWeeklyReset}
+                disabled={resetLoading}
+            >
+                {resetLoading ? <CircularProgress size={24} color="inherit" /> : <RefreshIcon />}
             </Fab>
 
             {/* Dialog para cadastro em lote */}

@@ -1,4 +1,5 @@
-import { getMemberById } from '../database/entities/members.js';
+import Tesseract from 'tesseract.js';
+
 import {
     createBulkParticipations as dbCreateBulkParticipations,
     createParticipation as dbCreateParticipation,
@@ -11,6 +12,7 @@ import {
     getParticipationsBySession as dbGetParticipationsBySession,
     updateParticipation as dbUpdateParticipation
 } from '../database/entities/member-participations.js';
+import { getAllMembers, getMemberById } from '../database/entities/members.js';
 
 export const getAllParticipations = async () => {
     return dbGetAllParticipations();
@@ -232,4 +234,153 @@ const validateMembersExist = async (memberIds) => {
         isValid: errors.length === 0,
         errors
     };
+};
+
+// eslint-disable-next-line max-lines-per-function
+export const processParticipationImages = async (imageFiles, customDate = null) => {
+    try {
+        const members = await getAllMembers();
+        const recognizedNames = new Set();
+        const processedImages = [];
+        for (const file of imageFiles) {
+            try {
+                const {
+                    data: { text }
+                } = await Tesseract.recognize(file.buffer, 'por', {
+                    logger: (m) => {
+                        if (m.status === 'recognizing text') {
+                            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+                        }
+                    }
+                });
+                const extractedText = text.toLowerCase();
+                const foundNames = [];
+
+                for (const member of members) {
+                    const memberNameLower = member.family_name.toLowerCase();
+
+                    if (extractedText.includes(memberNameLower)) {
+                        foundNames.push(member.family_name);
+                        recognizedNames.add(member.id);
+                        continue;
+                    }
+
+                    const words = extractedText.split(/\s+/);
+                    const memberWords = memberNameLower.split(/\s+/);
+
+                    const allWordsFound = memberWords.every((memberWord) => words.some((word) => word.includes(memberWord) || memberWord.includes(word)));
+
+                    if (allWordsFound && memberWords.length > 0) {
+                        foundNames.push(member.family_name);
+                        recognizedNames.add(member.id);
+                    }
+                }
+                processedImages.push({ filename: file.originalname, foundNames, extractedText: text.substring(0, 200) });
+            } catch (ocrError) {
+                processedImages.push({ filename: file.originalname, foundNames: [], error: ocrError.message });
+            }
+        }
+        const allExtractedNames = [];
+        processedImages.forEach((img) => {
+            if (img.foundNames) {
+                allExtractedNames.push(...img.foundNames);
+            }
+        });
+
+        const notFoundNames = [];
+
+        processedImages.forEach((img) => {
+            if (img.extractedText) {
+                const originalText = img.extractedText;
+                const words = originalText.split(/\s+/).filter((word) => word.length > 3 && word.match(/^[A-Z][a-zA-Z]*$/));
+
+                words.forEach((word) => {
+                    const wordLower = word.toLowerCase();
+
+                    const isRecognizedMember = members.some((member) => {
+                        const memberNameLower = member.family_name.toLowerCase();
+                        return memberNameLower.includes(wordLower) || wordLower.includes(memberNameLower);
+                    });
+
+                    if (!isRecognizedMember && !notFoundNames.includes(word)) {
+                        notFoundNames.push(word);
+                    }
+                });
+            }
+        });
+
+        if (recognizedNames.size === 0 && notFoundNames.length === 0) {
+            return { success: false, error: 'Nenhum nome de membro foi reconhecido nas imagens', details: { processedImages } };
+        }
+        let brasiliaTime;
+        if (customDate) {
+            // Usar data fornecida com horário atual de Brasília
+            const now = new Date();
+            const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
+            const customDateTime = new Date(`${customDate}T${currentTime}`);
+            brasiliaTime = customDateTime;
+        } else {
+            // Fallback: usar data/hora atual de Brasília (caso não seja enviada)
+            const currentDate = new Date();
+            const brasiliaOffset = -3 * 60;
+            brasiliaTime = new Date(currentDate.getTime() + brasiliaOffset * 60 * 1000);
+        }
+
+        const participationsToCreate = Array.from(recognizedNames).map((memberId) => ({ memberId: memberId, recordedAt: brasiliaTime.toISOString() }));
+        const result = await dbCreateBulkParticipations(participationsToCreate);
+
+        const successfulRegistrations = result.data || [];
+        const errors = result.errors || [];
+
+        const successfulMembers = successfulRegistrations.map((reg) => {
+            const member = members.find((m) => m.id === reg.member_id);
+            return member?.family_name || `ID ${reg.member_id}`;
+        });
+
+        const alreadyRegisteredMembers = errors
+            .filter((err) => err.error.includes('já tem participação'))
+            .map((err) => {
+                const member = members.find((m) => m.id === err.memberId);
+                return member?.family_name || `ID ${err.memberId}`;
+            });
+
+        const realErrors = errors.filter((err) => !err.error.includes('já tem participação'));
+
+        let message = '';
+        let warnings = [];
+
+        if (successfulRegistrations.length > 0) {
+            message = `${successfulRegistrations.length} participação(ões) registrada(s) com sucesso!`;
+        }
+
+        if (alreadyRegisteredMembers.length > 0) {
+            warnings.push(...alreadyRegisteredMembers.map((name) => `O membro ${name} já tem participação registrada hoje`));
+        }
+
+        if (notFoundNames.length > 0) {
+            warnings.push(...notFoundNames.slice(0, 5).map((name) => `O nome "${name}" foi encontrado mas não corresponde a nenhum membro cadastrado`));
+        }
+
+        if (realErrors.length > 0) {
+            const errorDetails = realErrors.map((err) => {
+                const member = members.find((m) => m.id === err.memberId);
+                return `O membro ${member?.family_name || `ID ${err.memberId}`} teve erro: ${err.error}`;
+            });
+            return { success: false, error: 'Erro ao processar algumas participações', details: errorDetails.join('\n• ') };
+        }
+
+        return {
+            success: true,
+            data: {
+                processedCount: successfulRegistrations.length,
+                successfulMembers,
+                warnings,
+                message,
+                processedImages,
+                date: brasiliaTime.toISOString()
+            }
+        };
+    } catch (error) {
+        return { success: false, error: 'Erro interno ao processar imagens', details: error.message, stack: error.stack };
+    }
 };

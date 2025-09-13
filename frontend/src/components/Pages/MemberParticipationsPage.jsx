@@ -62,23 +62,31 @@ import {
 
 const MemberParticipationsPage = () => {
     // Estados
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
-    const [sessionFilter, setSessionFilter] = useState('');
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [openDialog, setOpenDialog] = useState(false);
     const [loading, setLoading] = useState(true);
     const [formLoading, setFormLoading] = useState(false);
     const [resetLoading, setResetLoading] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-    const [participationForm, setParticipationForm] = useState({
-        memberIds: [],
-        sessionId: '',
-        participationStatus: 'present',
-        absenceReason: '',
-        recordedById: ''
+    const [resultModal, setResultModal] = useState({
+        open: false,
+        title: '',
+        message: '',
+        warnings: [],
+        severity: 'success'
     });
+    const [participationForm, setParticipationForm] = useState({
+        images: [],
+        recognizedNames: [],
+        customDate: ''
+    });
+
+    // Função para obter data atual de Brasília
+    const getBrasiliaDate = () => {
+        const now = new Date();
+        const brasiliaOffset = -3 * 60; // UTC-3 em minutos
+        const brasiliaTime = new Date(now.getTime() + brasiliaOffset * 60 * 1000);
+        return brasiliaTime.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    };
 
     const [members, setMembers] = useState([]);
     const [sessions, setSessions] = useState([]);
@@ -87,9 +95,8 @@ const MemberParticipationsPage = () => {
     const [memberPerformance, setMemberPerformance] = useState([]);
     const [stats, setStats] = useState({
         total_participations: 0,
-        present_count: 0,
-        late_count: 0,
-        absent_count: 0
+        unique_members: 0,
+        unique_days: 0
     });
 
     // Funções
@@ -107,18 +114,70 @@ const MemberParticipationsPage = () => {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setParticipationForm({
-            memberIds: [],
-            sessionId: '',
-            participationStatus: 'present',
-            absenceReason: '',
-            recordedById: ''
+            images: [],
+            recognizedNames: [],
+            customDate: ''
         });
     };
 
-    const handleFormChange = (field, value) => {
+    const handleImageUpload = (event) => {
+        const files = Array.from(event.target.files);
         setParticipationForm(prev => ({
             ...prev,
-            [field]: value
+            images: [...(prev.images || []), ...files]
+        }));
+    };
+
+    const handleDragOver = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
+    const handleDragEnter = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
+    const handleDragLeave = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
+    const handleDrop = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const files = Array.from(event.dataTransfer.files).filter(file => 
+            file.type.startsWith('image/')
+        );
+        
+        if (files.length > 0) {
+            setParticipationForm(prev => ({
+                ...prev,
+                images: [...(prev.images || []), ...files]
+            }));
+        }
+    };
+
+    const handlePaste = (event) => {
+        const items = Array.from(event.clipboardData.items);
+        const imageFiles = items
+            .filter(item => item.type.startsWith('image/'))
+            .map(item => item.getAsFile())
+            .filter(Boolean);
+
+        if (imageFiles.length > 0) {
+            setParticipationForm(prev => ({
+                ...prev,
+                images: [...(prev.images || []), ...imageFiles]
+            }));
+        }
+    };
+
+    const handleRemoveImage = (index) => {
+        setParticipationForm(prev => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index)
         }));
     };
 
@@ -141,12 +200,10 @@ const MemberParticipationsPage = () => {
             setMemberPerformance(performanceData);
             setStats({
                 total_participations: parseInt(statsData.total_participations) || 0,
-                present_count: participationsData.filter(p => p.participation_status === 'present').length,
-                late_count: participationsData.filter(p => p.participation_status === 'late').length,
-                absent_count: participationsData.filter(p => p.participation_status === 'absent').length
+                unique_members: parseInt(statsData.unique_members) || 0,
+                unique_days: parseInt(statsData.unique_days) || 0
             });
         } catch (error) {
-            console.error('Error loading data:', error);
             setSnackbar({
                 open: true,
                 message: `Erro ao carregar dados: ${error.message}`,
@@ -220,34 +277,59 @@ const MemberParticipationsPage = () => {
     };
 
 
-    const handleSaveParticipation = async () => {
+    const handleProcessImages = async () => {
         try {
             setFormLoading(true);
             
-            const validation = validateParticipationData(participationForm);
-            if (!validation.isValid) {
+            if (!participationForm.images || participationForm.images.length === 0) {
                 setSnackbar({
                     open: true,
-                    message: `Erro de validação: ${validation.errors.join(', ')}`,
+                    message: 'Selecione pelo menos uma imagem',
                     severity: 'error'
                 });
                 return;
             }
             
-            await createBulkParticipations(participationForm);
+            const formData = new FormData();
+            participationForm.images.forEach((image, index) => {
+                formData.append('images', image);
+            });
             
-            const selectedMemberNames = members
-                .filter(member => participationForm.memberIds.includes(member.id))
-                .map(member => member.family_name)
-                .join(', ');
+            // Sempre enviar a data (customizada ou padrão de Brasília)
+            const dateToSend = participationForm.customDate || getBrasiliaDate();
+            formData.append('customDate', dateToSend);
             
-            const sessionName = sessions.find(s => s.id === participationForm.sessionId)?.name || 'Sessão';
-            const statusLabel = getStatusLabel(participationForm.participationStatus);
+            const response = await fetch('/api/member-participations/process-images', {
+                method: 'POST',
+                body: formData
+            });
             
-            setSnackbar({ 
-                open: true, 
-                message: `Participação registrada para ${participationForm.memberIds.length} membros em ${sessionName}: ${statusLabel} - ${selectedMemberNames} ⚔️`, 
-                severity: 'success' 
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                const errorMessage = result.error || 'Erro desconhecido';
+                const details = result.details ? result.details.split('\n• ') : [];
+                
+                setResultModal({
+                    open: true,
+                    title: 'Erro no Processamento',
+                    message: errorMessage,
+                    warnings: details,
+                    severity: 'error'
+                });
+                return;
+            }
+            
+            setResultModal({
+                open: true,
+                title: 'Processamento Concluído',
+                message: result.data.message || 'Processamento concluído!',
+                warnings: result.data.warnings || [],
+                severity: 'success'
             });
             
             await loadData();
@@ -255,7 +337,7 @@ const MemberParticipationsPage = () => {
         } catch (error) {
             setSnackbar({ 
                 open: true, 
-                message: `Erro ao registrar participações: ${error.message}`, 
+                message: `Erro ao processar imagens: ${error.message}`, 
                 severity: 'error' 
             });
         } finally {
@@ -267,14 +349,6 @@ const MemberParticipationsPage = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -303,22 +377,26 @@ const MemberParticipationsPage = () => {
         }
     };
 
-    const filteredParticipations = participations.filter(participation => {
-        const matchesSearch = participation.member_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             participation.session_name?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = !statusFilter || participation.participation_status === statusFilter;
-        const matchesSession = !sessionFilter || participation.session_id === parseInt(sessionFilter);
-        return matchesSearch && matchesStatus && matchesSession;
-    });
-
-    const paginatedParticipations = filteredParticipations.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-    );
 
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        const handleGlobalPaste = (event) => {
+            if (openDialog) {
+                handlePaste(event);
+            }
+        };
+
+        if (openDialog) {
+            document.addEventListener('paste', handleGlobalPaste);
+        }
+
+        return () => {
+            document.removeEventListener('paste', handleGlobalPaste);
+        };
+    }, [openDialog]);
 
     if (loading) {
         return (
@@ -359,53 +437,36 @@ const MemberParticipationsPage = () => {
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Box>
                                     <Typography color="text.secondary" gutterBottom variant="h6">
-                                        Presentes
+                                        Membros Únicos
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'success.main' }}>
-                                        {stats.present_count}
+                                        {stats.unique_members}
                                     </Typography>
                                 </Box>
-                                <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />
+                                <PersonIcon sx={{ fontSize: 40, color: 'success.main' }} />
                             </Box>
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Box>
                                     <Typography color="text.secondary" gutterBottom variant="h6">
-                                        Atrasados
+                                        Dias Únicos
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'warning.main' }}>
-                                        {stats.late_count}
+                                        {stats.unique_days}
                                     </Typography>
                                 </Box>
                                 <ScheduleIcon sx={{ fontSize: 40, color: 'warning.main' }} />
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Box>
-                                    <Typography color="text.secondary" gutterBottom variant="h6">
-                                        Ausentes
-                                    </Typography>
-                                    <Typography variant="h4" sx={{ color: 'error.main' }}>
-                                        {stats.absent_count}
-                                    </Typography>
-                                </Box>
-                                <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />
                             </Box>
                         </CardContent>
                     </Card>
@@ -446,55 +507,6 @@ const MemberParticipationsPage = () => {
                 )}
             </Grid>
 
-            {/* Filtros */}
-            <Paper sx={{ p: 2, mb: 3 }}>
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} sm={6} md={4}>
-                        <TextField
-                            fullWidth
-                            label="Buscar"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Membro ou sessão..."
-                            InputProps={{
-                                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
-                            }}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <FormControl fullWidth>
-                            <InputLabel>Status</InputLabel>
-                            <Select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                label="Status"
-                            >
-                                <MenuItem value="">Todos</MenuItem>
-                                            {PARTICIPATION_STATUS_OPTIONS.map(option => (
-                                                <MenuItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </MenuItem>
-                                            ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <FormControl fullWidth>
-                            <InputLabel>Sessão</InputLabel>
-                            <Select
-                                value={sessionFilter}
-                                onChange={(e) => setSessionFilter(e.target.value)}
-                                label="Sessão"
-                            >
-                                <MenuItem value="">Todas</MenuItem>
-                                {sessions.map(session => (
-                                    <MenuItem key={session.id} value={session.id}>{session.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                </Grid>
-            </Paper>
 
             {/* Desempenho dos Membros */}
             {memberPerformance.length > 0 && (
@@ -587,98 +599,6 @@ const MemberParticipationsPage = () => {
                 </Paper>
             )}
 
-            {/* Tabela */}
-            <Paper>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Membro</TableCell>
-                                <TableCell>Sessão</TableCell>
-                                <TableCell align="center">Status</TableCell>
-                                <TableCell>Motivo da Ausência</TableCell>
-                                <TableCell>Registrado por</TableCell>
-                                <TableCell>Data/Hora</TableCell>
-                                <TableCell align="center">Ações</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {paginatedParticipations.map((participation) => (
-                                <TableRow key={participation.id} hover>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                                                {participation.member_name.charAt(0)}
-                                            </Avatar>
-                                            <Typography variant="subtitle2" fontWeight="medium">
-                                                {participation.member_name}
-                                            </Typography>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" color="primary">
-                                            {participation.session_name}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        {participation.participation_status === 'present' && (
-                                            <Tooltip title="Presente">
-                                                <CheckCircleIcon sx={{ fontSize: 24, color: 'success.main' }} />
-                                            </Tooltip>
-                                        )}
-                                        {participation.participation_status === 'late' && (
-                                            <Tooltip title="Atrasado">
-                                                <ScheduleIcon sx={{ fontSize: 24, color: 'warning.main' }} />
-                                            </Tooltip>
-                                        )}
-                                        {participation.participation_status === 'absent' && (
-                                            <Tooltip title="Ausente">
-                                                <CancelIcon sx={{ fontSize: 24, color: 'error.main' }} />
-                                            </Tooltip>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {participation.absence_reason || '-'}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2">
-                                            {participation.recorded_by_name}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {new Date(participation.recorded_at).toLocaleString('pt-BR')}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <Tooltip title="Excluir">
-                                            <IconButton 
-                                                size="small" 
-                                                color="error"
-                                                onClick={() => handleDeleteParticipation(participation.id)}
-                                            >
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-                <TablePagination
-                    component="div"
-                    count={filteredParticipations.length}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    labelRowsPerPage="Linhas por página:"
-                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-                />
-            </Paper>
 
             {/* Botões Flutuantes */}
             <Fab
@@ -703,123 +623,157 @@ const MemberParticipationsPage = () => {
             {/* Dialog para cadastro em lote */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
-                    Registrar Participações em Lote
+                    Registrar Participações por Imagem
                 </DialogTitle>
                 <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid container spacing={3} sx={{ mt: 1 }}>
                         <Grid item xs={12}>
-                            <Autocomplete
-                                multiple
-                                options={members}
-                                getOptionLabel={(option) => option.family_name}
-                                value={members.filter(member => participationForm.memberIds.includes(member.id))}
-                                onChange={(event, newValue) => {
-                                    const selectedIds = newValue.map(member => member.id);
-                                    handleFormChange('memberIds', selectedIds);
+                            <Box
+                                sx={{
+                                    border: '2px dashed',
+                                    borderColor: 'primary.main',
+                                    borderRadius: 2,
+                                    p: 3,
+                                    textAlign: 'center',
+                                    bgcolor: 'background.paper',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover'
+                                    }
                                 }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Membros"
-                                        placeholder="Digite para pesquisar e selecionar múltiplos membros..."
-                                    />
-                                )}
-                                renderTags={(value, getTagProps) =>
-                                    value.map((option, index) => (
-                                        <Chip
-                                            variant="outlined"
-                                            label={option.family_name}
-                                            {...getTagProps({ index })}
-                                            key={option.id}
-                                        />
-                                    ))
-                                }
-                                noOptionsText="Nenhum membro encontrado"
-                                clearText="Limpar todos"
-                                openText="Abrir"
-                                closeText="Fechar"
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Sessão</InputLabel>
-                                <Select
-                                    value={participationForm.sessionId}
-                                    onChange={(e) => handleFormChange('sessionId', e.target.value)}
-                                    label="Sessão"
-                                >
-                                    {sessions.map(session => (
-                                        <MenuItem key={session.id} value={session.id}>{session.name}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Status de Participação</InputLabel>
-                                <Select
-                                    value={participationForm.participationStatus}
-                                    onChange={(e) => handleFormChange('participationStatus', e.target.value)}
-                                    label="Status de Participação"
-                                >
-                                            {PARTICIPATION_STATUS_OPTIONS.map(option => (
-                                                <MenuItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </MenuItem>
-                                            ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <Autocomplete
-                                options={members}
-                                getOptionLabel={(option) => option.family_name}
-                                value={members.find(member => member.id === participationForm.recordedById) || null}
-                                onChange={(event, newValue) => {
-                                    handleFormChange('recordedById', newValue ? newValue.id : '');
-                                }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Registrado por"
-                                        placeholder="Digite para pesquisar..."
-                                    />
-                                )}
-                                noOptionsText="Nenhum membro encontrado"
-                                clearText="Limpar"
-                                openText="Abrir"
-                                closeText="Fechar"
-                            />
-                        </Grid>
-                        {participationForm.participationStatus === 'absent' && (
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    label="Motivo da Ausência"
-                                    multiline
-                                    rows={2}
-                                    value={participationForm.absenceReason}
-                                    onChange={(e) => handleFormChange('absenceReason', e.target.value)}
-                                    placeholder="Descreva o motivo da ausência..."
+                                onClick={() => document.getElementById('image-upload').click()}
+                                onDragOver={handleDragOver}
+                                onDragEnter={handleDragEnter}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onPaste={handlePaste}
+                                tabIndex={0}
+                            >
+                                <input
+                                    id="image-upload"
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleImageUpload}
                                 />
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="h6" color="primary.main" gutterBottom>
+                                        Selecione as imagens da Node War
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                        Clique aqui, arraste as imagens ou use Ctrl+V para colar
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Imagens com os nomes dos participantes serão processadas automaticamente
+                                    </Typography>
+                                </Box>
+                                {participationForm.images && participationForm.images.length > 0 && (
+                                    <Box sx={{ mt: 2 }}>
+                                        <Typography variant="body2" color="success.main">
+                                            {participationForm.images.length} imagem(ns) selecionada(s)
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+                        </Grid>
+                        
+                        {participationForm.images && participationForm.images.length > 0 && (
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Imagens Selecionadas:
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                    {participationForm.images.map((image, index) => (
+                                        <Chip
+                                            key={index}
+                                            label={image.name}
+                                            onDelete={() => handleRemoveImage(index)}
+                                            variant="outlined"
+                                            color="primary"
+                                        />
+                                    ))}
+                                </Box>
                             </Grid>
                         )}
+
                         <Grid item xs={12}>
-                            <Typography variant="body2" color="text.secondary">
-                                Será aplicado a {participationForm.memberIds.length} membro(s) selecionado(s)
-                            </Typography>
+                            <TextField
+                                fullWidth
+                                label="Data da Node War"
+                                type="date"
+                                value={participationForm.customDate || getBrasiliaDate()}
+                                onChange={(e) => setParticipationForm(prev => ({
+                                    ...prev,
+                                    customDate: e.target.value
+                                }))}
+                                helperText="Data atual de Brasília (pode ser alterada se necessário)"
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                            />
                         </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancelar</Button>
                     <Button 
-                        onClick={handleSaveParticipation} 
+                        onClick={handleProcessImages} 
                         variant="contained"
-                        disabled={formLoading || participationForm.memberIds.length === 0 || !participationForm.sessionId || !participationForm.recordedById}
+                        disabled={formLoading || !participationForm.images || participationForm.images.length === 0}
                         startIcon={formLoading ? <CircularProgress size={20} color="inherit" /> : <GroupAddIcon />}
                     >
-                        {formLoading ? 'Registrando...' : `Registrar ${participationForm.memberIds.length} Participação(ões)`}
+                        {formLoading ? 'Processando...' : `Processar ${participationForm.images ? participationForm.images.length : 0} Imagem(ns)`}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Modal de Resultado */}
+            <Dialog
+                open={resultModal.open}
+                onClose={() => setResultModal({ ...resultModal, open: false })}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle sx={{ 
+                    color: resultModal.severity === 'error' ? 'error.main' : 'success.main',
+                    fontWeight: 'bold'
+                }}>
+                    {resultModal.title}
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            {resultModal.message}
+                        </Typography>
+                        
+                        {resultModal.warnings && resultModal.warnings.length > 0 && (
+                            <Box>
+                                <Typography variant="h6" sx={{ mb: 1, color: 'warning.main' }}>
+                                    {resultModal.severity === 'error' ? 'Detalhes:' : 'Avisos:'}
+                                </Typography>
+                                <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                    {resultModal.warnings.map((warning, index) => (
+                                        <Typography 
+                                            key={index} 
+                                            component="li" 
+                                            variant="body2" 
+                                            sx={{ mb: 0.5 }}
+                                        >
+                                            {warning}
+                                        </Typography>
+                                    ))}
+                                </Box>
+                            </Box>
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={() => setResultModal({ ...resultModal, open: false })}
+                        variant="contained"
+                    >
+                        Fechar
                     </Button>
                 </DialogActions>
             </Dialog>

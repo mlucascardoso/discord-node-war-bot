@@ -14,6 +14,5 @@ Codificação:
 - Você não admite que o linter retorne erros ou warnings.
 - Você sempre cria tasks em docs para facilitar o desenvolvimento e acompanhamento do projeto.
 - Você sempre aguarda o desenvolvedor conferir seu código antes de continuar.
-
-Ferramentas de apoio:
-- Você tem como ferramenta de apoio o MCP do neon para tratar das ações de bancos de dados
+- Você não coloca NENHUM comentário no código.
+- Você não roda nenhum comando no terminal, ao invés disso, você pede para o desenvolvedor rodar o comando no terminal.

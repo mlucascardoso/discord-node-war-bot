@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
     createBulkParticipations,
     createParticipation,
@@ -9,10 +10,26 @@ import {
     getParticipationStats,
     getParticipationsByMember,
     getParticipationsBySession,
+    processParticipationImages,
     updateParticipation
 } from '../api/member-participations.js';
 
 const router = express.Router();
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 10
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas arquivos de imagem são permitidos'), false);
+        }
+    }
+});
 
 router.get('/', async (req, res) => {
     try {
@@ -139,6 +156,31 @@ router.delete('/:id', async (req, res) => {
         }
     } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
+    }
+});
+
+router.post('/process-images', upload.array('images', 10), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Nenhuma imagem foi enviada'
+            });
+        }
+
+        const customDate = req.body.customDate || null;
+        const result = await processParticipationImages(req.files, customDate);
+        if (result.success) {
+            return res.status(201).json({ success: true, data: result.data });
+        } else {
+            return res.status(400).json({ success: false, error: result.error, details: result.details });
+        }
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            details: error.message
+        });
     }
 });
 

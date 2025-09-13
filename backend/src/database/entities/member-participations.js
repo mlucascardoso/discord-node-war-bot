@@ -5,13 +5,9 @@ export const getAllParticipations = async () => {
         SELECT 
             mp.*,
             m.family_name as member_name,
-            ns.schedule as session_date,
-            CONCAT('Node War #', ns.id, ' - ', TO_CHAR(ns.schedule, 'DD/MM/YYYY')) as session_name,
-            rb.family_name as recorded_by_name
+            DATE(mp.recorded_at AT TIME ZONE 'America/Sao_Paulo') as participation_date
         FROM member_participations mp
         INNER JOIN members m ON mp.member_id = m.id
-        INNER JOIN nodewar_sessions ns ON mp.session_id = ns.id
-        INNER JOIN members rb ON mp.recorded_by_id = rb.id
         ORDER BY mp.recorded_at DESC
     `;
     return result.rows;
@@ -67,29 +63,25 @@ export const getParticipationsBySession = async (sessionId) => {
 
 export const createParticipation = async (participationData) => {
     try {
+        const participationDate = participationData.recordedAt ? new Date(participationData.recordedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
         const existing = await sql`
             SELECT id FROM member_participations 
             WHERE member_id = ${participationData.memberId} 
-            AND session_id = ${participationData.sessionId}
+            AND DATE(recorded_at AT TIME ZONE 'America/Sao_Paulo') = ${participationDate}
         `;
 
         if (existing.rows.length > 0) {
-            return { success: false, error: 'Participação já registrada para este membro nesta sessão' };
+            return { success: false, error: 'Participação já registrada para este membro nesta data' };
         }
 
         const result = await sql`
             INSERT INTO member_participations (
                 member_id,
-                session_id,
-                participation_status,
-                absence_reason,
-                recorded_by_id
+                recorded_at
             ) VALUES (
                 ${participationData.memberId},
-                ${participationData.sessionId},
-                ${participationData.participationStatus},
-                ${participationData.absenceReason},
-                ${participationData.recordedById}
+                ${participationData.recordedAt || sql`CURRENT_TIMESTAMP`}
             ) RETURNING *
         `;
 
@@ -105,16 +97,17 @@ export const createBulkParticipations = async (participations) => {
 
     for (const participation of participations) {
         try {
+            const participationDate = new Date(participation.recordedAt).toISOString().split('T')[0];
             const existing = await sql`
                 SELECT id FROM member_participations 
                 WHERE member_id = ${participation.memberId} 
-                AND session_id = ${participation.sessionId}
+                AND DATE(recorded_at AT TIME ZONE 'America/Sao_Paulo') = ${participationDate}
             `;
 
             if (existing.rows.length > 0) {
                 errors.push({
                     memberId: participation.memberId,
-                    error: 'Participação já registrada'
+                    error: 'já tem participação registrada nesta data'
                 });
                 continue;
             }
@@ -122,16 +115,10 @@ export const createBulkParticipations = async (participations) => {
             const result = await sql`
                 INSERT INTO member_participations (
                     member_id,
-                    session_id,
-                    participation_status,
-                    absence_reason,
-                    recorded_by_id
+                    recorded_at
                 ) VALUES (
                     ${participation.memberId},
-                    ${participation.sessionId},
-                    ${participation.participationStatus},
-                    ${participation.absenceReason},
-                    ${participation.recordedById}
+                    ${participation.recordedAt || sql`CURRENT_TIMESTAMP`}
                 ) RETURNING *
             `;
 
@@ -151,8 +138,7 @@ export const updateParticipation = async (id, participationData) => {
     const result = await sql`
         UPDATE member_participations
         SET
-            participation_status = ${participationData.participationStatus},
-            absence_reason = ${participationData.absenceReason}
+            recorded_at = ${participationData.recordedAt || sql`CURRENT_TIMESTAMP`}
         WHERE id = ${id}
         RETURNING *
     `;
@@ -172,13 +158,8 @@ export const getParticipationStats = async () => {
     const result = await sql`
         SELECT 
             COUNT(*) as total_participations,
-            COUNT(CASE WHEN participation_status = 'present' THEN 1 END) as present_count,
-            COUNT(CASE WHEN participation_status = 'late' THEN 1 END) as late_count,
-            COUNT(CASE WHEN participation_status = 'absent' THEN 1 END) as absent_count,
-            ROUND(
-                (COUNT(CASE WHEN participation_status = 'present' THEN 1 END)::decimal / 
-                 NULLIF(COUNT(*), 0)::decimal) * 100, 2
-            ) as presence_rate
+            COUNT(DISTINCT member_id) as unique_members,
+            COUNT(DISTINCT DATE(recorded_at AT TIME ZONE 'America/Sao_Paulo')) as unique_days
         FROM member_participations
     `;
     return result.rows[0];
@@ -188,13 +169,9 @@ export const getMemberParticipationStats = async (memberId) => {
     const result = await sql`
         SELECT 
             COUNT(*) as total_participations,
-            COUNT(CASE WHEN participation_status = 'present' THEN 1 END) as present_count,
-            COUNT(CASE WHEN participation_status = 'late' THEN 1 END) as late_count,
-            COUNT(CASE WHEN participation_status = 'absent' THEN 1 END) as absent_count,
-            ROUND(
-                (COUNT(CASE WHEN participation_status = 'present' THEN 1 END)::decimal / 
-                 NULLIF(COUNT(*), 0)::decimal) * 100, 2
-            ) as presence_rate
+            COUNT(DISTINCT DATE(recorded_at AT TIME ZONE 'America/Sao_Paulo')) as participation_days,
+            MIN(recorded_at) as first_participation,
+            MAX(recorded_at) as last_participation
         FROM member_participations
         WHERE member_id = ${memberId}
     `;

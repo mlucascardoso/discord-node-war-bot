@@ -180,7 +180,10 @@ const NodewarTemplatesPage = () => {
                 flag_slots: fullTemplate.flag_slots || 0,
                 defense_slots: fullTemplate.defense_slots || 0,
                 caller_slots: fullTemplate.caller_slots || 0,
-                elephant_slots: fullTemplate.elephant_slots || 0
+                elephant_slots: fullTemplate.elephant_slots || 0,
+                striker_slots: fullTemplate.striker_slots || 0,
+                bloco_slots: fullTemplate.bloco_slots || 0,
+                dosa_slots: fullTemplate.dosa_slots || 0
             });
         } catch (error) {
             console.error('Erro ao carregar template:', error);

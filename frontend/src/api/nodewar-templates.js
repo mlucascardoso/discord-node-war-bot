@@ -207,7 +207,10 @@ export function formatNodewarTemplate(template) {
             flag: template.flag_slots || 0,
             defense: template.defense_slots || 0,
             caller: template.caller_slots || 0,
-            elephant: template.elephant_slots || 0
+            elephant: template.elephant_slots || 0,
+            striker: template.striker_slots || 0,
+            bloco: template.bloco_slots || 0,
+            dosa: template.dosa_slots || 0
         },
         createdAt: template.created_at ? new Date(template.created_at).toLocaleString() : 'N/A'
     };

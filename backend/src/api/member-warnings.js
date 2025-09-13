@@ -3,15 +3,12 @@ import {
     createBulkWarnings as dbCreateBulkWarnings,
     createWarning as dbCreateWarning,
     deleteWarning as dbDeleteWarning,
-    getActiveWarningsByMember as dbGetActiveWarningsByMember,
     getAllWarnings as dbGetAllWarnings,
     getMemberWarningStats as dbGetMemberWarningStats,
     getWarningById as dbGetWarningById,
     getWarningStats as dbGetWarningStats,
     getWarningsByFilters as dbGetWarningsByFilters,
     getWarningsByMember as dbGetWarningsByMember,
-    reactivateWarning as dbReactivateWarning,
-    resolveWarning as dbResolveWarning,
     updateWarning as dbUpdateWarning
 } from '../database/entities/member-warnings.js';
 
@@ -44,15 +41,6 @@ export const getWarningsByMember = async (memberId) => {
     return { success: true, data: warnings };
 };
 
-export const getActiveWarningsByMember = async (memberId) => {
-    const memberExists = await getMemberById(memberId);
-    if (!memberExists) {
-        return { success: false, error: 'Membro não encontrado' };
-    }
-    const warnings = await dbGetActiveWarningsByMember(memberId);
-    return { success: true, data: warnings };
-};
-
 export const getMemberWarningStats = async (memberId) => {
     const memberExists = await getMemberById(memberId);
     if (!memberExists) {
@@ -73,11 +61,6 @@ export const createWarning = async (warningData) => {
         return { success: false, error: 'Membro não encontrado' };
     }
 
-    const issuedByExists = await getMemberById(warningData.issuedById);
-    if (!issuedByExists) {
-        return { success: false, error: 'Membro que emitiu não encontrado' };
-    }
-
     const warning = await dbCreateWarning(warningData);
     return { success: true, data: warning };
 };
@@ -93,18 +76,10 @@ export const createBulkWarnings = async (warningsData) => {
         return { success: false, error: 'Membros não encontrados', details: memberValidation.errors };
     }
 
-    const issuedByExists = await getMemberById(warningsData.issuedById);
-    if (!issuedByExists) {
-        return { success: false, error: 'Membro que emitiu não encontrado' };
-    }
-
     const warnings = warningsData.memberIds.map((memberId) => ({
         memberId,
         warningType: warningsData.warningType,
-        severity: warningsData.severity,
-        description: warningsData.description,
-        sessionId: warningsData.sessionId,
-        issuedById: warningsData.issuedById
+        description: warningsData.description
     }));
 
     const results = await dbCreateBulkWarnings(warnings);
@@ -122,49 +97,7 @@ export const updateWarning = async (id, warningData) => {
         return { success: false, error: 'Advertência não encontrada' };
     }
 
-    if (!existingWarning.is_active) {
-        return { success: false, error: 'Não é possível editar advertência resolvida' };
-    }
-
     const warning = await dbUpdateWarning(id, warningData);
-    return { success: true, data: warning };
-};
-
-export const resolveWarning = async (id, resolvedById, resolutionNotes) => {
-    const validation = validateResolutionData(resolvedById, resolutionNotes);
-    if (!validation.isValid) {
-        return { success: false, error: 'Erro de validação', details: validation.errors };
-    }
-
-    const existingWarning = await dbGetWarningById(id);
-    if (!existingWarning) {
-        return { success: false, error: 'Advertência não encontrada' };
-    }
-
-    if (!existingWarning.is_active) {
-        return { success: false, error: 'Advertência já está resolvida' };
-    }
-
-    const resolvedByExists = await getMemberById(resolvedById);
-    if (!resolvedByExists) {
-        return { success: false, error: 'Membro que resolveu não encontrado' };
-    }
-
-    const warning = await dbResolveWarning(id, resolvedById, resolutionNotes);
-    return { success: true, data: warning };
-};
-
-export const reactivateWarning = async (id) => {
-    const existingWarning = await dbGetWarningById(id);
-    if (!existingWarning) {
-        return { success: false, error: 'Advertência não encontrada' };
-    }
-
-    if (existingWarning.is_active) {
-        return { success: false, error: 'Advertência já está ativa' };
-    }
-
-    const warning = await dbReactivateWarning(id);
     return { success: true, data: warning };
 };
 
@@ -187,24 +120,14 @@ const validateWarningData = (warningData) => {
 
     if (!warningData.warningType) {
         errors.push('Tipo de advertência é obrigatório');
-    } else if (!['absence', 'behavior', 'performance', 'other'].includes(warningData.warningType)) {
-        errors.push('Tipo de advertência deve ser: absence, behavior, performance ou other');
-    }
-
-    if (!warningData.severity) {
-        errors.push('Severidade é obrigatória');
-    } else if (!['low', 'medium', 'high'].includes(warningData.severity)) {
-        errors.push('Severidade deve ser: low, medium ou high');
+    } else if (!['falta', 'bot', 'classe', 'atraso', 'comportamento'].includes(warningData.warningType)) {
+        errors.push('Tipo de advertência deve ser: falta, bot, classe, atraso ou comportamento');
     }
 
     if (!warningData.description?.trim()) {
         errors.push('Descrição é obrigatória');
     } else if (warningData.description.length > 1000) {
         errors.push('Descrição não pode exceder 1000 caracteres');
-    }
-
-    if (!warningData.issuedById) {
-        errors.push('ID de quem emitiu é obrigatório');
     }
 
     return {
@@ -216,12 +139,8 @@ const validateWarningData = (warningData) => {
 const validateWarningUpdateData = (warningData) => {
     const errors = [];
 
-    if (warningData.warningType && !['absence', 'behavior', 'performance', 'other'].includes(warningData.warningType)) {
-        errors.push('Tipo de advertência deve ser: absence, behavior, performance ou other');
-    }
-
-    if (warningData.severity && !['low', 'medium', 'high'].includes(warningData.severity)) {
-        errors.push('Severidade deve ser: low, medium ou high');
+    if (warningData.warningType && !['falta', 'bot', 'classe', 'atraso', 'comportamento'].includes(warningData.warningType)) {
+        errors.push('Tipo de advertência deve ser: falta, bot, classe, atraso ou comportamento');
     }
 
     if (warningData.description !== undefined) {
@@ -247,41 +166,14 @@ const validateBulkWarningsData = (warningsData) => {
 
     if (!warningsData.warningType) {
         errors.push('Tipo de advertência é obrigatório');
-    } else if (!['absence', 'behavior', 'performance', 'other'].includes(warningsData.warningType)) {
-        errors.push('Tipo de advertência deve ser: absence, behavior, performance ou other');
-    }
-
-    if (!warningsData.severity) {
-        errors.push('Severidade é obrigatória');
-    } else if (!['low', 'medium', 'high'].includes(warningsData.severity)) {
-        errors.push('Severidade deve ser: low, medium ou high');
+    } else if (!['falta', 'bot', 'classe', 'atraso', 'comportamento'].includes(warningsData.warningType)) {
+        errors.push('Tipo de advertência deve ser: falta, bot, classe, atraso ou comportamento');
     }
 
     if (!warningsData.description?.trim()) {
         errors.push('Descrição é obrigatória');
     } else if (warningsData.description.length > 1000) {
         errors.push('Descrição não pode exceder 1000 caracteres');
-    }
-
-    if (!warningsData.issuedById) {
-        errors.push('ID de quem emitiu é obrigatório');
-    }
-
-    return {
-        isValid: errors.length === 0,
-        errors
-    };
-};
-
-const validateResolutionData = (resolvedById, resolutionNotes) => {
-    const errors = [];
-
-    if (!resolvedById) {
-        errors.push('ID de quem resolveu é obrigatório');
-    }
-
-    if (resolutionNotes && resolutionNotes.length > 1000) {
-        errors.push('Notas de resolução não pode exceder 1000 caracteres');
     }
 
     return {

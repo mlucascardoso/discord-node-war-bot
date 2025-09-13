@@ -42,9 +42,6 @@ export async function getWarningsByFilters(filters) {
 
         if (filters.memberId) queryParams.append('memberId', filters.memberId);
         if (filters.warningType) queryParams.append('warningType', filters.warningType);
-        if (filters.severity) queryParams.append('severity', filters.severity);
-        if (filters.isActive !== undefined) queryParams.append('isActive', filters.isActive);
-        if (filters.sessionId) queryParams.append('sessionId', filters.sessionId);
 
         const response = await fetch(`${API_BASE}/member-warnings/search?${queryParams}`);
         const result = await handleResponse(response);
@@ -73,17 +70,6 @@ export async function getWarningsByMember(memberId) {
         return result.data || result;
     } catch (error) {
         console.error(`Error fetching warnings for member ${memberId}:`, error);
-        throw error;
-    }
-}
-
-export async function getActiveWarningsByMember(memberId) {
-    try {
-        const response = await fetch(`${API_BASE}/member-warnings/member/${memberId}/active`);
-        const result = await handleResponse(response);
-        return result.data || result;
-    } catch (error) {
-        console.error(`Error fetching active warnings for member ${memberId}:`, error);
         throw error;
     }
 }
@@ -150,36 +136,6 @@ export async function updateWarning(id, warningData) {
     }
 }
 
-export async function resolveWarning(id, resolutionData) {
-    try {
-        const response = await fetch(`${API_BASE}/member-warnings/${id}/resolve`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(resolutionData)
-        });
-        const result = await handleResponse(response);
-        return result.data || result;
-    } catch (error) {
-        console.error(`Error resolving warning ${id}:`, error);
-        throw error;
-    }
-}
-
-export async function reactivateWarning(id) {
-    try {
-        const response = await fetch(`${API_BASE}/member-warnings/${id}/reactivate`, {
-            method: 'PUT'
-        });
-        const result = await handleResponse(response);
-        return result.data || result;
-    } catch (error) {
-        console.error(`Error reactivating warning ${id}:`, error);
-        throw error;
-    }
-}
-
 export async function deleteWarning(id) {
     try {
         const response = await fetch(`${API_BASE}/member-warnings/${id}`, {
@@ -202,14 +158,8 @@ export function validateWarningData(warningData) {
 
     if (!warningData.warningType) {
         errors.push('Tipo de advertência é obrigatório');
-    } else if (!['absence', 'behavior', 'performance', 'other'].includes(warningData.warningType)) {
-        errors.push('Tipo de advertência deve ser: absence, behavior, performance ou other');
-    }
-
-    if (!warningData.severity) {
-        errors.push('Severidade é obrigatória');
-    } else if (!['low', 'medium', 'high'].includes(warningData.severity)) {
-        errors.push('Severidade deve ser: low, medium ou high');
+    } else if (!['falta', 'bot', 'classe', 'atraso', 'comportamento'].includes(warningData.warningType)) {
+        errors.push('Tipo de advertência deve ser: falta, bot, classe, atraso ou comportamento');
     }
 
     if (!warningData.description?.trim()) {
@@ -218,28 +168,15 @@ export function validateWarningData(warningData) {
         errors.push('Descrição não pode exceder 1000 caracteres');
     }
 
-    if (!warningData.issuedById) {
-        errors.push('Responsável pela emissão é obrigatório');
-    }
-
-    if (warningData.resolutionNotes && warningData.resolutionNotes.length > 1000) {
-        errors.push('Notas de resolução não pode exceder 1000 caracteres');
-    }
-
     return { isValid: errors.length === 0, errors };
 }
 
 export const WARNING_TYPE_OPTIONS = [
-    { value: 'absence', label: 'Ausência', color: 'warning' },
-    { value: 'behavior', label: 'Comportamento', color: 'error' },
-    { value: 'performance', label: 'Performance', color: 'info' },
-    { value: 'other', label: 'Outros', color: 'default' }
-];
-
-export const WARNING_SEVERITY_OPTIONS = [
-    { value: 'low', label: 'Baixa', color: 'success' },
-    { value: 'medium', label: 'Média', color: 'warning' },
-    { value: 'high', label: 'Alta', color: 'error' }
+    { value: 'falta', label: 'Falta', color: 'warning' },
+    { value: 'bot', label: 'Bot', color: 'info' },
+    { value: 'classe', label: 'Classe', color: 'primary' },
+    { value: 'atraso', label: 'Atraso', color: 'secondary' },
+    { value: 'comportamento', label: 'Comportamento', color: 'error' }
 ];
 
 export function getWarningTypeLabel(type) {
@@ -249,15 +186,5 @@ export function getWarningTypeLabel(type) {
 
 export function getWarningTypeColor(type) {
     const option = WARNING_TYPE_OPTIONS.find((opt) => opt.value === type);
-    return option ? option.color : 'default';
-}
-
-export function getSeverityLabel(severity) {
-    const option = WARNING_SEVERITY_OPTIONS.find((opt) => opt.value === severity);
-    return option ? option.label : 'Desconhecido';
-}
-
-export function getSeverityColor(severity) {
-    const option = WARNING_SEVERITY_OPTIONS.find((opt) => opt.value === severity);
     return option ? option.color : 'default';
 }

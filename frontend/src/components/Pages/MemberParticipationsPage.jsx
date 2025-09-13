@@ -1,0 +1,634 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Typography,
+    Paper,
+    Box,
+    IconButton,
+    TextField,
+    Button,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TablePagination,
+    Grid,
+    Card,
+    CardContent,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Fab,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    CircularProgress,
+    Alert,
+    Snackbar,
+    Tooltip,
+    Avatar,
+    Badge,
+    Autocomplete,
+    Chip
+} from '@mui/material';
+import {
+    Add as AddIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Search as SearchIcon,
+    FilterList as FilterIcon,
+    CheckCircle as CheckCircleIcon,
+    Cancel as CancelIcon,
+    Schedule as ScheduleIcon,
+    Person as PersonIcon,
+    GroupAdd as GroupAddIcon
+} from '@mui/icons-material';
+
+const MemberParticipationsPage = () => {
+    // Estados
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [sessionFilter, setSessionFilter] = useState('');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [formLoading, setFormLoading] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [participationForm, setParticipationForm] = useState({
+        memberIds: [],
+        sessionId: '',
+        participationStatus: 'present',
+        absenceReason: '',
+        recordedById: ''
+    });
+
+    // Mock data para demonstração
+    const mockMembers = [
+        { id: 1, family_name: 'DragonSlayer' },
+        { id: 2, family_name: 'ShadowMage' },
+        { id: 3, family_name: 'IronKnight' },
+        { id: 4, family_name: 'FireWizard' },
+        { id: 5, family_name: 'StormRanger' },
+        { id: 6, family_name: 'DarkPaladin' },
+        { id: 7, family_name: 'MysticArcher' },
+        { id: 8, family_name: 'BloodWarrior' }
+    ];
+
+    const mockSessions = [
+        { id: 1, name: 'Node War #001', date: '2024-01-15', status: 'completed' },
+        { id: 2, name: 'Node War #002', date: '2024-01-17', status: 'completed' },
+        { id: 3, name: 'Node War #003', date: '2024-01-19', status: 'scheduled' },
+        { id: 4, name: 'Node War #004', date: '2024-01-22', status: 'scheduled' }
+    ];
+
+    const mockParticipations = [
+        {
+            id: 1,
+            member_id: 1,
+            member_name: 'DragonSlayer',
+            session_id: 1,
+            session_name: 'Node War #001',
+            participation_status: 'present',
+            absence_reason: null,
+            recorded_by: 'Admin',
+            recorded_at: '2024-01-15 20:00:00'
+        },
+        {
+            id: 2,
+            member_id: 2,
+            member_name: 'ShadowMage',
+            session_id: 1,
+            session_name: 'Node War #001',
+            participation_status: 'late',
+            absence_reason: null,
+            recorded_by: 'Admin',
+            recorded_at: '2024-01-15 20:15:00'
+        },
+        {
+            id: 3,
+            member_id: 3,
+            member_name: 'IronKnight',
+            session_id: 1,
+            session_name: 'Node War #001',
+            participation_status: 'absent',
+            absence_reason: 'Questões pessoais',
+            recorded_by: 'Admin',
+            recorded_at: '2024-01-15 20:00:00'
+        }
+    ];
+
+    // Funções
+    const handleOpenDialog = () => {
+        setParticipationForm({
+            memberIds: [],
+            sessionId: '',
+            participationStatus: 'present',
+            absenceReason: '',
+            recordedById: ''
+        });
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setParticipationForm({
+            memberIds: [],
+            sessionId: '',
+            participationStatus: 'present',
+            absenceReason: '',
+            recordedById: ''
+        });
+    };
+
+    const handleFormChange = (field, value) => {
+        setParticipationForm(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleSaveParticipation = async () => {
+        try {
+            setFormLoading(true);
+            
+            // Simular salvamento em lote
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            const selectedMemberNames = mockMembers
+                .filter(member => participationForm.memberIds.includes(member.id))
+                .map(member => member.family_name)
+                .join(', ');
+            
+            const sessionName = mockSessions.find(s => s.id === participationForm.sessionId)?.name || 'Sessão';
+            
+            setSnackbar({ 
+                open: true, 
+                message: `Participação registrada para ${participationForm.memberIds.length} membros em ${sessionName}: ${selectedMemberNames} ⚔️`, 
+                severity: 'success' 
+            });
+            
+            handleCloseDialog();
+        } catch (error) {
+            setSnackbar({ 
+                open: true, 
+                message: `Erro ao registrar participações: ${error.message}`, 
+                severity: 'error' 
+            });
+        } finally {
+            setFormLoading(false);
+        }
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
+    };
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'present': return 'success';
+            case 'late': return 'warning';
+            case 'absent': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case 'present': return 'Presente';
+            case 'late': return 'Atrasado';
+            case 'absent': return 'Ausente';
+            default: return 'Desconhecido';
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'present': return <CheckCircleIcon />;
+            case 'late': return <ScheduleIcon />;
+            case 'absent': return <CancelIcon />;
+            default: return <PersonIcon />;
+        }
+    };
+
+    // Filtros
+    const filteredParticipations = mockParticipations.filter(participation => {
+        const matchesSearch = participation.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            participation.session_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = !statusFilter || participation.participation_status === statusFilter;
+        const matchesSession = !sessionFilter || participation.session_id === parseInt(sessionFilter);
+        return matchesSearch && matchesStatus && matchesSession;
+    });
+
+    const paginatedParticipations = filteredParticipations.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+    );
+
+    // Estatísticas
+    const totalParticipations = mockParticipations.length;
+    const presentCount = mockParticipations.filter(p => p.participation_status === 'present').length;
+    const lateCount = mockParticipations.filter(p => p.participation_status === 'late').length;
+    const absentCount = mockParticipations.filter(p => p.participation_status === 'absent').length;
+
+    useEffect(() => {
+        // Simular carregamento
+        setTimeout(() => setLoading(false), 1000);
+    }, []);
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ p: 3 }}>
+            {/* Header */}
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    Controle de Presença
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Registre e acompanhe a participação dos membros nas Node Wars
+                </Typography>
+            </Box>
+
+            {/* Dashboard Cards */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="text.secondary" gutterBottom variant="h6">
+                                        Total
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {totalParticipations}
+                                    </Typography>
+                                </Box>
+                                <PersonIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="text.secondary" gutterBottom variant="h6">
+                                        Presentes
+                                    </Typography>
+                                    <Typography variant="h4" sx={{ color: 'success.main' }}>
+                                        {presentCount}
+                                    </Typography>
+                                </Box>
+                                <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="text.secondary" gutterBottom variant="h6">
+                                        Atrasados
+                                    </Typography>
+                                    <Typography variant="h4" sx={{ color: 'warning.main' }}>
+                                        {lateCount}
+                                    </Typography>
+                                </Box>
+                                <ScheduleIcon sx={{ fontSize: 40, color: 'warning.main' }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography color="text.secondary" gutterBottom variant="h6">
+                                        Ausentes
+                                    </Typography>
+                                    <Typography variant="h4" sx={{ color: 'error.main' }}>
+                                        {absentCount}
+                                    </Typography>
+                                </Box>
+                                <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* Filtros */}
+            <Paper sx={{ p: 2, mb: 3 }}>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={6} md={4}>
+                        <TextField
+                            fullWidth
+                            label="Buscar"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Membro ou sessão..."
+                            InputProps={{
+                                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                            }}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                        <FormControl fullWidth>
+                            <InputLabel>Status</InputLabel>
+                            <Select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                label="Status"
+                            >
+                                <MenuItem value="">Todos</MenuItem>
+                                <MenuItem value="present">Presente</MenuItem>
+                                <MenuItem value="late">Atrasado</MenuItem>
+                                <MenuItem value="absent">Ausente</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                        <FormControl fullWidth>
+                            <InputLabel>Sessão</InputLabel>
+                            <Select
+                                value={sessionFilter}
+                                onChange={(e) => setSessionFilter(e.target.value)}
+                                label="Sessão"
+                            >
+                                <MenuItem value="">Todas</MenuItem>
+                                {mockSessions.map(session => (
+                                    <MenuItem key={session.id} value={session.id}>{session.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            {/* Tabela */}
+            <Paper>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Membro</TableCell>
+                                <TableCell>Sessão</TableCell>
+                                <TableCell align="center">Status</TableCell>
+                                <TableCell>Motivo da Ausência</TableCell>
+                                <TableCell>Registrado por</TableCell>
+                                <TableCell>Data/Hora</TableCell>
+                                <TableCell align="center">Ações</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {paginatedParticipations.map((participation) => (
+                                <TableRow key={participation.id} hover>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                                                {participation.member_name.charAt(0)}
+                                            </Avatar>
+                                            <Typography variant="subtitle2" fontWeight="medium">
+                                                {participation.member_name}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" color="primary">
+                                            {participation.session_name}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Tooltip title={getStatusLabel(participation.participation_status)}>
+                                            <Badge
+                                                badgeContent={getStatusIcon(participation.participation_status)}
+                                                color={getStatusColor(participation.participation_status)}
+                                            >
+                                                <Box sx={{ width: 24, height: 24 }} />
+                                            </Badge>
+                                        </Tooltip>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {participation.absence_reason || '-'}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2">
+                                            {participation.recorded_by}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {new Date(participation.recorded_at).toLocaleString('pt-BR')}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Tooltip title="Editar">
+                                            <IconButton 
+                                                size="small" 
+                                                color="primary"
+                                            >
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Excluir">
+                                            <IconButton 
+                                                size="small" 
+                                                color="error"
+                                            >
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <TablePagination
+                    component="div"
+                    count={filteredParticipations.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+                />
+            </Paper>
+
+            {/* FAB */}
+            <Fab
+                color="primary"
+                aria-label="add"
+                sx={{ position: 'fixed', bottom: 16, right: 16 }}
+                onClick={handleOpenDialog}
+            >
+                <GroupAddIcon />
+            </Fab>
+
+            {/* Dialog para cadastro em lote */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    Registrar Participações em Lote
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12}>
+                            <Autocomplete
+                                multiple
+                                options={mockMembers}
+                                getOptionLabel={(option) => option.family_name}
+                                value={mockMembers.filter(member => participationForm.memberIds.includes(member.id))}
+                                onChange={(event, newValue) => {
+                                    const selectedIds = newValue.map(member => member.id);
+                                    handleFormChange('memberIds', selectedIds);
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Membros"
+                                        placeholder="Digite para pesquisar e selecionar múltiplos membros..."
+                                    />
+                                )}
+                                renderTags={(value, getTagProps) =>
+                                    value.map((option, index) => (
+                                        <Chip
+                                            variant="outlined"
+                                            label={option.family_name}
+                                            {...getTagProps({ index })}
+                                            key={option.id}
+                                        />
+                                    ))
+                                }
+                                noOptionsText="Nenhum membro encontrado"
+                                clearText="Limpar todos"
+                                openText="Abrir"
+                                closeText="Fechar"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Sessão</InputLabel>
+                                <Select
+                                    value={participationForm.sessionId}
+                                    onChange={(e) => handleFormChange('sessionId', e.target.value)}
+                                    label="Sessão"
+                                >
+                                    {mockSessions.map(session => (
+                                        <MenuItem key={session.id} value={session.id}>{session.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Status de Participação</InputLabel>
+                                <Select
+                                    value={participationForm.participationStatus}
+                                    onChange={(e) => handleFormChange('participationStatus', e.target.value)}
+                                    label="Status de Participação"
+                                >
+                                    <MenuItem value="present">Presente</MenuItem>
+                                    <MenuItem value="late">Atrasado</MenuItem>
+                                    <MenuItem value="absent">Ausente</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <Autocomplete
+                                options={mockMembers}
+                                getOptionLabel={(option) => option.family_name}
+                                value={mockMembers.find(member => member.id === participationForm.recordedById) || null}
+                                onChange={(event, newValue) => {
+                                    handleFormChange('recordedById', newValue ? newValue.id : '');
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Registrado por"
+                                        placeholder="Digite para pesquisar..."
+                                    />
+                                )}
+                                noOptionsText="Nenhum membro encontrado"
+                                clearText="Limpar"
+                                openText="Abrir"
+                                closeText="Fechar"
+                            />
+                        </Grid>
+                        {participationForm.participationStatus === 'absent' && (
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Motivo da Ausência"
+                                    multiline
+                                    rows={2}
+                                    value={participationForm.absenceReason}
+                                    onChange={(e) => handleFormChange('absenceReason', e.target.value)}
+                                    placeholder="Descreva o motivo da ausência..."
+                                />
+                            </Grid>
+                        )}
+                        <Grid item xs={12}>
+                            <Typography variant="body2" color="text.secondary">
+                                Será aplicado a {participationForm.memberIds.length} membro(s) selecionado(s)
+                            </Typography>
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>Cancelar</Button>
+                    <Button 
+                        onClick={handleSaveParticipation} 
+                        variant="contained"
+                        disabled={formLoading || participationForm.memberIds.length === 0 || !participationForm.sessionId || !participationForm.recordedById}
+                        startIcon={formLoading ? <CircularProgress size={20} color="inherit" /> : <GroupAddIcon />}
+                    >
+                        {formLoading ? 'Registrando...' : `Registrar ${participationForm.memberIds.length} Participação(ões)`}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar para notificações */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+            >
+                <Alert 
+                    onClose={handleCloseSnackbar} 
+                    severity={snackbar.severity} 
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+        </Box>
+    );
+};
+
+export default MemberParticipationsPage;

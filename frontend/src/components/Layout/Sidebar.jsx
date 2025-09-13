@@ -24,14 +24,31 @@ import {
     ExpandLess,
     ExpandMore,
     ViewModule as TemplateIcon,
+    Assignment as AssignmentIcon,
+    CheckCircle as CheckCircleIcon,
+    Warning as WarningIcon,
+    PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 
 const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCollapse }) => {
     const [commandsOpen, setCommandsOpen] = useState(true);
+    const [membersOpen, setMembersOpen] = useState(true);
 
     const menuItems = [
         { id: 'welcome', label: 'Dashboard', icon: <DashboardIcon />, badge: null },
-        { id: 'members', label: 'Membros', icon: <PeopleIcon />, badge: null },
+        {
+            id: 'members-section',
+            label: 'Gestão de Membros',
+            icon: <PeopleIcon />,
+            badge: null,
+            isSubmenu: true,
+            children: [
+                { id: 'members', label: 'Membros', icon: <PersonAddIcon />, badge: null },
+                { id: 'commitments', label: 'Comprometimentos', icon: <AssignmentIcon />, badge: null },
+                { id: 'participations', label: 'Controle de Presença', icon: <CheckCircleIcon />, badge: null },
+                { id: 'warnings', label: 'Advertências', icon: <WarningIcon />, badge: null },
+            ]
+        },
         {
             id: 'commands',
             label: 'Node War',
@@ -49,6 +66,10 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
 
     const handleCommandsToggle = () => {
         setCommandsOpen(!commandsOpen);
+    };
+
+    const handleMembersToggle = () => {
+        setMembersOpen(!membersOpen);
     };
 
     const sidebarWidth = isCollapsed ? 72 : 280;
@@ -126,7 +147,7 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                                     arrow
                                 >
                                     <ListItemButton
-                                        onClick={item.isSubmenu ? handleCommandsToggle : () => onMenuClick(item.id)}
+                                        onClick={item.isSubmenu ? (item.id === 'commands' ? handleCommandsToggle : handleMembersToggle) : () => onMenuClick(item.id)}
                                         sx={{
                                             borderRadius: 2,
                                             mx: 1,
@@ -168,7 +189,7 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                                                     }}
                                                 />
                                                 {item.isSubmenu && (
-                                                    commandsOpen ? <ExpandLess /> : <ExpandMore />
+                                                    (item.id === 'commands' ? commandsOpen : membersOpen) ? <ExpandLess /> : <ExpandMore />
                                                 )}
                                             </>
                                         )}
@@ -180,7 +201,7 @@ const Sidebar = ({ currentPage, onMenuClick, botStatus, isCollapsed, onToggleCol
                             {item.isSubmenu && item.children && (
                                 <>
                                     {/* Submenu expandido quando não colapsado */}
-                                    <Collapse in={commandsOpen && !isCollapsed} timeout="auto" unmountOnExit>
+                                    <Collapse in={(item.id === 'commands' ? commandsOpen : membersOpen) && !isCollapsed} timeout="auto" unmountOnExit>
                                         <List component="div" disablePadding>
                                             {item.children.map((childItem) => (
                                                 <ListItem key={childItem.id} disablePadding sx={{ mb: 0.5 }}>

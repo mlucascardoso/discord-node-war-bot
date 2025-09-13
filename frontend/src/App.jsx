@@ -20,6 +20,9 @@ import BotStatusPage from './components/Pages/BotStatusPage';
 import NodeWarPage from './components/Pages/NodeWarPage';
 import NodewarTemplatesPage from './components/Pages/NodewarTemplatesPage';
 import MembersPage from './components/Pages/MembersPage';
+import MemberCommitmentsPage from './components/Pages/MemberCommitmentsPage';
+import MemberParticipationsPage from './components/Pages/MemberParticipationsPage';
+import MemberWarningsPage from './components/Pages/MemberWarningsPage';
 import SettingsPage from './components/Pages/SettingsPage';
 
 // Hooks
@@ -55,6 +58,9 @@ function App() {
         { id: 'nodewar', label: 'Node War' },
         { id: 'templates', label: 'Templates NodeWar' },
         { id: 'members', label: 'Membros' },
+        { id: 'commitments', label: 'Comprometimentos' },
+        { id: 'participations', label: 'Controle de Presença' },
+        { id: 'warnings', label: 'Advertências' },
         { id: 'settings', label: 'Configurações' },
     ];
 
@@ -109,6 +115,12 @@ function App() {
                     updateMemberRoles={updateMemberRoles}
                     setMessage={setMessage}
                 />;
+            case 'commitments':
+                return <MemberCommitmentsPage />;
+            case 'participations':
+                return <MemberParticipationsPage />;
+            case 'warnings':
+                return <MemberWarningsPage />;
             case 'settings':
                 return <SettingsPage />;
             default:

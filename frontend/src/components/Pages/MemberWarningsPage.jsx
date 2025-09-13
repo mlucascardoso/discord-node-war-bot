@@ -14,7 +14,6 @@ import {
     getSeverityLabel,
     resolveWarning,
     reactivateWarning,
-    updateWarning,
     validateWarningData
 } from '../../api/member-warnings.js';
 import {
@@ -57,7 +56,6 @@ import {
 } from '@mui/material';
 import {
     Add as AddIcon,
-    Edit as EditIcon,
     Delete as DeleteIcon,
     Search as SearchIcon,
     FilterList as FilterIcon,
@@ -133,6 +131,10 @@ const MemberWarningsPage = () => {
     };
 
     const handleDeleteWarning = async (id) => {
+        if (!window.confirm('Tem certeza que deseja excluir esta advertência?')) {
+            return;
+        }
+        
         try {
             await deleteWarning(id);
             setSnackbar({
@@ -149,6 +151,7 @@ const MemberWarningsPage = () => {
             });
         }
     };
+
 
     const handleResolveWarning = async (id, resolutionNotes) => {
         try {
@@ -589,18 +592,11 @@ const MemberWarningsPage = () => {
                                         )}
                                     </TableCell>
                                     <TableCell align="center">
-                                        <Tooltip title="Editar">
-                                            <IconButton 
-                                                size="small" 
-                                                color="primary"
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
                                         <Tooltip title="Excluir">
                                             <IconButton 
                                                 size="small" 
                                                 color="error"
+                                                onClick={() => handleDeleteWarning(warning.id)}
                                             >
                                                 <DeleteIcon />
                                             </IconButton>

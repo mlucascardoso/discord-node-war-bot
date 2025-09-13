@@ -9,7 +9,6 @@ import {
     PARTICIPATION_STATUS_OPTIONS,
     getStatusColor,
     getStatusLabel,
-    updateParticipation,
     validateParticipationData
 } from '../../api/member-participations.js';
 import {
@@ -49,7 +48,6 @@ import {
 } from '@mui/material';
 import {
     Add as AddIcon,
-    Edit as EditIcon,
     Delete as DeleteIcon,
     Search as SearchIcon,
     FilterList as FilterIcon,
@@ -151,6 +149,10 @@ const MemberParticipationsPage = () => {
     };
 
     const handleDeleteParticipation = async (id) => {
+        if (!window.confirm('Tem certeza que deseja excluir esta participação?')) {
+            return;
+        }
+        
         try {
             await deleteParticipation(id);
             setSnackbar({
@@ -167,6 +169,7 @@ const MemberParticipationsPage = () => {
             });
         }
     };
+
 
     const handleSaveParticipation = async () => {
         try {
@@ -469,18 +472,11 @@ const MemberParticipationsPage = () => {
                                         </Typography>
                                     </TableCell>
                                     <TableCell align="center">
-                                        <Tooltip title="Editar">
-                                            <IconButton 
-                                                size="small" 
-                                                color="primary"
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
                                         <Tooltip title="Excluir">
                                             <IconButton 
                                                 size="small" 
                                                 color="error"
+                                                onClick={() => handleDeleteParticipation(participation.id)}
                                             >
                                                 <DeleteIcon />
                                             </IconButton>

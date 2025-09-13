@@ -650,7 +650,7 @@ const MemberParticipationsPage = () => {
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2">
-                                            {participation.recorded_by}
+                                            {participation.recorded_by_name}
                                         </Typography>
                                     </TableCell>
                                     <TableCell>

@@ -1,4 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { getAllMembers } from '../../api/members.js';
+import { getAllNodewarSessions } from '../../api/nodewar-sessions.js';
+import {
+    createBulkParticipations,
+    deleteParticipation,
+    getAllParticipations,
+    getParticipationStats,
+    PARTICIPATION_STATUS_OPTIONS,
+    getStatusColor,
+    getStatusLabel,
+    updateParticipation,
+    validateParticipationData
+} from '../../api/member-participations.js';
 import {
     Typography,
     Paper,
@@ -66,60 +79,15 @@ const MemberParticipationsPage = () => {
         recordedById: ''
     });
 
-    // Mock data para demonstração
-    const mockMembers = [
-        { id: 1, family_name: 'DragonSlayer' },
-        { id: 2, family_name: 'ShadowMage' },
-        { id: 3, family_name: 'IronKnight' },
-        { id: 4, family_name: 'FireWizard' },
-        { id: 5, family_name: 'StormRanger' },
-        { id: 6, family_name: 'DarkPaladin' },
-        { id: 7, family_name: 'MysticArcher' },
-        { id: 8, family_name: 'BloodWarrior' }
-    ];
-
-    const mockSessions = [
-        { id: 1, name: 'Node War #001', date: '2024-01-15', status: 'completed' },
-        { id: 2, name: 'Node War #002', date: '2024-01-17', status: 'completed' },
-        { id: 3, name: 'Node War #003', date: '2024-01-19', status: 'scheduled' },
-        { id: 4, name: 'Node War #004', date: '2024-01-22', status: 'scheduled' }
-    ];
-
-    const mockParticipations = [
-        {
-            id: 1,
-            member_id: 1,
-            member_name: 'DragonSlayer',
-            session_id: 1,
-            session_name: 'Node War #001',
-            participation_status: 'present',
-            absence_reason: null,
-            recorded_by: 'Admin',
-            recorded_at: '2024-01-15 20:00:00'
-        },
-        {
-            id: 2,
-            member_id: 2,
-            member_name: 'ShadowMage',
-            session_id: 1,
-            session_name: 'Node War #001',
-            participation_status: 'late',
-            absence_reason: null,
-            recorded_by: 'Admin',
-            recorded_at: '2024-01-15 20:15:00'
-        },
-        {
-            id: 3,
-            member_id: 3,
-            member_name: 'IronKnight',
-            session_id: 1,
-            session_name: 'Node War #001',
-            participation_status: 'absent',
-            absence_reason: 'Questões pessoais',
-            recorded_by: 'Admin',
-            recorded_at: '2024-01-15 20:00:00'
-        }
-    ];
+    const [members, setMembers] = useState([]);
+    const [sessions, setSessions] = useState([]);
+    const [participations, setParticipations] = useState([]);
+    const [stats, setStats] = useState({
+        total_participations: 0,
+        present_count: 0,
+        late_count: 0,
+        absent_count: 0
+    });
 
     // Funções
     const handleOpenDialog = () => {
@@ -151,26 +119,86 @@ const MemberParticipationsPage = () => {
         }));
     };
 
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [membersData, sessionsData, participationsData, statsData] = await Promise.all([
+                getAllMembers(),
+                getAllNodewarSessions(),
+                getAllParticipations(),
+                getParticipationStats()
+            ]);
+            
+            setMembers(membersData);
+            setSessions(sessionsData);
+            setParticipations(participationsData);
+            setStats({
+                total_participations: parseInt(statsData.total_participations) || 0,
+                present_count: participationsData.filter(p => p.participation_status === 'present').length,
+                late_count: participationsData.filter(p => p.participation_status === 'late').length,
+                absent_count: participationsData.filter(p => p.participation_status === 'absent').length
+            });
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setSnackbar({
+                open: true,
+                message: `Erro ao carregar dados: ${error.message}`,
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteParticipation = async (id) => {
+        try {
+            await deleteParticipation(id);
+            setSnackbar({
+                open: true,
+                message: 'Participação excluída com sucesso!',
+                severity: 'success'
+            });
+            await loadData();
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: `Erro ao excluir participação: ${error.message}`,
+                severity: 'error'
+            });
+        }
+    };
+
     const handleSaveParticipation = async () => {
         try {
             setFormLoading(true);
             
-            // Simular salvamento em lote
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const validation = validateParticipationData(participationForm);
+            if (!validation.isValid) {
+                setSnackbar({
+                    open: true,
+                    message: `Erro de validação: ${validation.errors.join(', ')}`,
+                    severity: 'error'
+                });
+                return;
+            }
             
-            const selectedMemberNames = mockMembers
+            await createBulkParticipations(participationForm);
+            
+            const selectedMemberNames = members
                 .filter(member => participationForm.memberIds.includes(member.id))
                 .map(member => member.family_name)
                 .join(', ');
             
-            const sessionName = mockSessions.find(s => s.id === participationForm.sessionId)?.name || 'Sessão';
+            const sessionName = sessions.find(s => s.id === participationForm.sessionId)?.name || 'Sessão';
+            const statusLabel = getStatusLabel(participationForm.participationStatus);
             
             setSnackbar({ 
                 open: true, 
-                message: `Participação registrada para ${participationForm.memberIds.length} membros em ${sessionName}: ${selectedMemberNames} ⚔️`, 
+                message: `Participação registrada para ${participationForm.memberIds.length} membros em ${sessionName}: ${statusLabel} - ${selectedMemberNames} ⚔️`, 
                 severity: 'success' 
             });
             
+            await loadData();
             handleCloseDialog();
         } catch (error) {
             setSnackbar({ 
@@ -223,10 +251,9 @@ const MemberParticipationsPage = () => {
         }
     };
 
-    // Filtros
-    const filteredParticipations = mockParticipations.filter(participation => {
-        const matchesSearch = participation.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            participation.session_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredParticipations = participations.filter(participation => {
+        const matchesSearch = participation.member_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             participation.session_name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = !statusFilter || participation.participation_status === statusFilter;
         const matchesSession = !sessionFilter || participation.session_id === parseInt(sessionFilter);
         return matchesSearch && matchesStatus && matchesSession;
@@ -237,15 +264,8 @@ const MemberParticipationsPage = () => {
         page * rowsPerPage + rowsPerPage
     );
 
-    // Estatísticas
-    const totalParticipations = mockParticipations.length;
-    const presentCount = mockParticipations.filter(p => p.participation_status === 'present').length;
-    const lateCount = mockParticipations.filter(p => p.participation_status === 'late').length;
-    const absentCount = mockParticipations.filter(p => p.participation_status === 'absent').length;
-
     useEffect(() => {
-        // Simular carregamento
-        setTimeout(() => setLoading(false), 1000);
+        loadData();
     }, []);
 
     if (loading) {
@@ -279,7 +299,7 @@ const MemberParticipationsPage = () => {
                                         Total
                                     </Typography>
                                     <Typography variant="h4">
-                                        {totalParticipations}
+                                        {stats.total_participations}
                                     </Typography>
                                 </Box>
                                 <PersonIcon sx={{ fontSize: 40, color: 'primary.main' }} />
@@ -296,7 +316,7 @@ const MemberParticipationsPage = () => {
                                         Presentes
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'success.main' }}>
-                                        {presentCount}
+                                        {stats.present_count}
                                     </Typography>
                                 </Box>
                                 <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />
@@ -313,7 +333,7 @@ const MemberParticipationsPage = () => {
                                         Atrasados
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'warning.main' }}>
-                                        {lateCount}
+                                        {stats.late_count}
                                     </Typography>
                                 </Box>
                                 <ScheduleIcon sx={{ fontSize: 40, color: 'warning.main' }} />
@@ -330,7 +350,7 @@ const MemberParticipationsPage = () => {
                                         Ausentes
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'error.main' }}>
-                                        {absentCount}
+                                        {stats.absent_count}
                                     </Typography>
                                 </Box>
                                 <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />
@@ -364,9 +384,11 @@ const MemberParticipationsPage = () => {
                                 label="Status"
                             >
                                 <MenuItem value="">Todos</MenuItem>
-                                <MenuItem value="present">Presente</MenuItem>
-                                <MenuItem value="late">Atrasado</MenuItem>
-                                <MenuItem value="absent">Ausente</MenuItem>
+                                            {PARTICIPATION_STATUS_OPTIONS.map(option => (
+                                                <MenuItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
                             </Select>
                         </FormControl>
                     </Grid>
@@ -379,7 +401,7 @@ const MemberParticipationsPage = () => {
                                 label="Sessão"
                             >
                                 <MenuItem value="">Todas</MenuItem>
-                                {mockSessions.map(session => (
+                                {sessions.map(session => (
                                     <MenuItem key={session.id} value={session.id}>{session.name}</MenuItem>
                                 ))}
                             </Select>
@@ -501,9 +523,9 @@ const MemberParticipationsPage = () => {
                         <Grid item xs={12}>
                             <Autocomplete
                                 multiple
-                                options={mockMembers}
+                                options={members}
                                 getOptionLabel={(option) => option.family_name}
-                                value={mockMembers.filter(member => participationForm.memberIds.includes(member.id))}
+                                value={members.filter(member => participationForm.memberIds.includes(member.id))}
                                 onChange={(event, newValue) => {
                                     const selectedIds = newValue.map(member => member.id);
                                     handleFormChange('memberIds', selectedIds);
@@ -539,7 +561,7 @@ const MemberParticipationsPage = () => {
                                     onChange={(e) => handleFormChange('sessionId', e.target.value)}
                                     label="Sessão"
                                 >
-                                    {mockSessions.map(session => (
+                                    {sessions.map(session => (
                                         <MenuItem key={session.id} value={session.id}>{session.name}</MenuItem>
                                     ))}
                                 </Select>
@@ -553,17 +575,19 @@ const MemberParticipationsPage = () => {
                                     onChange={(e) => handleFormChange('participationStatus', e.target.value)}
                                     label="Status de Participação"
                                 >
-                                    <MenuItem value="present">Presente</MenuItem>
-                                    <MenuItem value="late">Atrasado</MenuItem>
-                                    <MenuItem value="absent">Ausente</MenuItem>
+                                            {PARTICIPATION_STATUS_OPTIONS.map(option => (
+                                                <MenuItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
                                 </Select>
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <Autocomplete
-                                options={mockMembers}
+                                options={members}
                                 getOptionLabel={(option) => option.family_name}
-                                value={mockMembers.find(member => member.id === participationForm.recordedById) || null}
+                                value={members.find(member => member.id === participationForm.recordedById) || null}
                                 onChange={(event, newValue) => {
                                     handleFormChange('recordedById', newValue ? newValue.id : '');
                                 }}

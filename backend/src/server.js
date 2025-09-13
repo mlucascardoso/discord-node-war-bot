@@ -8,76 +8,67 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables for local development
-dotenv.config({ path: '.env.local' });
-import classProfilesRouter from './routes/class-profiles.js';
-import classesRouter from './routes/classes.js';
-import discordRouter from './routes/discord.js';
-import guildsRouter from './routes/guilds.js';
-import membersRouter from './routes/members.js';
-import nodewarSessionsRouter from './routes/nodewar-sessions.js';
-import nodewarTemplatesRouter from './routes/nodewar-templates.js';
-import rolesRouter from './routes/roles.js';
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+console.log('DATABASE_URL loaded:', process.env.DATABASE_URL);
 
-// Servir arquivos estáticos do frontend (produção)
-if (process.env.NODE_ENV === 'production') {
-    const frontendPath = path.join(__dirname, '../../frontend/dist');
-    app.use(express.static(frontendPath));
+async function loadRouters() {
+    return {
+        classProfilesRouter: (await import('./routes/class-profiles.js')).default,
+        classesRouter: (await import('./routes/classes.js')).default,
+        discordRouter: (await import('./routes/discord.js')).default,
+        guildsRouter: (await import('./routes/guilds.js')).default,
+        memberCommitmentsRouter: (await import('./routes/member-commitments.js')).default,
+        memberParticipationsRouter: (await import('./routes/member-participations.js')).default,
+        memberWarningsRouter: (await import('./routes/member-warnings.js')).default,
+        membersRouter: (await import('./routes/members.js')).default,
+        nodewarSessionsRouter: (await import('./routes/nodewar-sessions.js')).default,
+        nodewarTemplatesRouter: (await import('./routes/nodewar-templates.js')).default,
+        rolesRouter: (await import('./routes/roles.js')).default
+    };
 }
-app.use('/api/classes', classesRouter);
-app.use('/api/class-profiles', classProfilesRouter);
-app.use('/api/members', membersRouter);
-app.use('/api/guilds', guildsRouter);
-app.use('/api/discord', discordRouter);
-app.use('/api/nodewar-templates', nodewarTemplatesRouter);
-app.use('/api/nodewar-sessions', nodewarSessionsRouter);
-app.use('/api/roles', rolesRouter);
 
-// Health check endpoint for Railway
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        service: 'discord-node-war-bot'
-    });
-});
+async function startServer() {
+    const routers = await loadRouters();
 
-// Debug frontend files
-app.get('/debug/frontend', async (req, res) => {
-    try {
-        const fs = await import('fs');
+    const app = express();
+    app.use(cors());
+    app.use(express.json());
+
+    if (process.env.NODE_ENV === 'production') {
         const frontendPath = path.join(__dirname, '../../frontend/dist');
-
-        // Check if dist folder exists
-        const distExists = fs.existsSync(frontendPath);
-        const indexExists = fs.existsSync(path.join(frontendPath, 'index.html'));
-
-        let files = [];
-        if (distExists) {
-            files = fs.readdirSync(frontendPath);
-        }
-
-        res.json({
-            frontendPath,
-            distExists,
-            indexExists,
-            files,
-            nodeEnv: process.env.NODE_ENV,
-            staticServing: process.env.NODE_ENV === 'production'
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+        app.use(express.static(frontendPath));
     }
-});
 
-const PORT = process.env.PORT || 3000;
+    app.use('/api/classes', routers.classesRouter);
+    app.use('/api/class-profiles', routers.classProfilesRouter);
+    app.use('/api/members', routers.membersRouter);
+    app.use('/api/member-commitments', routers.memberCommitmentsRouter);
+    app.use('/api/member-participations', routers.memberParticipationsRouter);
+    app.use('/api/member-warnings', routers.memberWarningsRouter);
+    app.use('/api/guilds', routers.guildsRouter);
+    app.use('/api/discord', routers.discordRouter);
+    app.use('/api/nodewar-templates', routers.nodewarTemplatesRouter);
+    app.use('/api/nodewar-sessions', routers.nodewarSessionsRouter);
+    app.use('/api/roles', routers.rolesRouter);
 
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-    console.log(`📊 Status: http://localhost:${PORT}/api/status`);
-    console.log(`📋 Canais: http://localhost:${PORT}/api/channels`);
-    console.log(`🎮 NodeWar: POST http://localhost:${PORT}/api/nodewar`);
-});
+    app.get('/health', (req, res) => {
+        res.status(200).json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            service: 'discord-node-war-bot'
+        });
+    });
+
+    const PORT = process.env.PORT || 3000;
+
+    app.listen(PORT, () => {
+        console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+        console.log(`📊 Status: http://localhost:${PORT}/api/status`);
+        console.log(`📋 Canais: http://localhost:${PORT}/api/channels`);
+        console.log(`🎮 NodeWar: POST http://localhost:${PORT}/api/nodewar`);
+    });
+}
+
+// Start the server
+startServer().catch(console.error);

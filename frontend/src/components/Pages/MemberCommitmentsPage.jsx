@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { getAllMembers } from '../../api/members.js';
+import {
+    createBulkCommitments,
+    deleteCommitment,
+    getCommitmentStats,
+    getCommitmentsWithProgress,
+    updateCommitment,
+    validateCommitmentData
+} from '../../api/member-commitments.js';
 import {
     Typography,
     Paper,
@@ -47,9 +56,7 @@ import {
 } from '@mui/icons-material';
 
 const MemberCommitmentsPage = () => {
-    // Estados
     const [searchTerm, setSearchTerm] = useState('');
-    const [weekFilter, setWeekFilter] = useState('current');
     const [statusFilter, setStatusFilter] = useState('');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -63,50 +70,14 @@ const MemberCommitmentsPage = () => {
         notes: ''
     });
 
-    // Mock data para demonstração
-    const mockMembers = [
-        { id: 1, family_name: 'DragonSlayer' },
-        { id: 2, family_name: 'ShadowMage' },
-        { id: 3, family_name: 'IronKnight' },
-        { id: 4, family_name: 'FireWizard' },
-        { id: 5, family_name: 'StormRanger' },
-        { id: 6, family_name: 'DarkPaladin' },
-        { id: 7, family_name: 'MysticArcher' },
-        { id: 8, family_name: 'BloodWarrior' }
-    ];
-
-    const mockCommitments = [
-        {
-            id: 1,
-            member_id: 1,
-            member_name: 'DragonSlayer',
-            committed_participations: 3,
-            actual_participations: 2,
-            notes: 'Comprometimento padrão',
-            created_at: '2024-01-15',
-            status: 'pending'
-        },
-        {
-            id: 2,
-            member_id: 2,
-            member_name: 'ShadowMage',
-            committed_participations: 4,
-            actual_participations: 4,
-            notes: 'Participação extra por liderança',
-            created_at: '2024-01-15',
-            status: 'fulfilled'
-        },
-        {
-            id: 3,
-            member_id: 3,
-            member_name: 'IronKnight',
-            committed_participations: 2,
-            actual_participations: 1,
-            notes: 'Reduzido por questões pessoais',
-            created_at: '2024-01-15',
-            status: 'overdue'
-        }
-    ];
+    const [members, setMembers] = useState([]);
+    const [commitments, setCommitments] = useState([]);
+    const [stats, setStats] = useState({
+        total_commitments: 0,
+        fulfilled_commitments: 0,
+        pending_commitments: 0,
+        overdue_commitments: 0
+    });
 
     // Funções
     const handleOpenDialog = () => {
@@ -138,10 +109,19 @@ const MemberCommitmentsPage = () => {
         try {
             setFormLoading(true);
             
-            // Simular salvamento em lote
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const validation = validateCommitmentData(commitmentForm);
+            if (!validation.isValid) {
+                setSnackbar({
+                    open: true,
+                    message: `Erro de validação: ${validation.errors.join(', ')}`,
+                    severity: 'error'
+                });
+                return;
+            }
             
-            const selectedMemberNames = mockMembers
+            await createBulkCommitments(commitmentForm);
+            
+            const selectedMemberNames = members
                 .filter(member => commitmentForm.memberIds.includes(member.id))
                 .map(member => member.family_name)
                 .join(', ');
@@ -152,6 +132,7 @@ const MemberCommitmentsPage = () => {
                 severity: 'success' 
             });
             
+            await loadData();
             handleCloseDialog();
         } catch (error) {
             setSnackbar({ 
@@ -195,9 +176,55 @@ const MemberCommitmentsPage = () => {
         }
     };
 
-    // Filtros
-    const filteredCommitments = mockCommitments.filter(commitment => {
-        const matchesSearch = commitment.member_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [membersData, commitmentsData, statsData] = await Promise.all([
+                getAllMembers(),
+                getCommitmentsWithProgress(),
+                getCommitmentStats()
+            ]);
+            
+            setMembers(membersData);
+            setCommitments(commitmentsData);
+            setStats({
+                total_commitments: parseInt(statsData.total_commitments) || 0,
+                fulfilled_commitments: commitmentsData.filter(c => c.status === 'fulfilled').length,
+                pending_commitments: commitmentsData.filter(c => c.status === 'pending').length,
+                overdue_commitments: commitmentsData.filter(c => c.status === 'overdue').length
+            });
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setSnackbar({
+                open: true,
+                message: `Erro ao carregar dados: ${error.message}`,
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteCommitment = async (id) => {
+        try {
+            await deleteCommitment(id);
+            setSnackbar({
+                open: true,
+                message: 'Comprometimento excluído com sucesso!',
+                severity: 'success'
+            });
+            await loadData();
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: `Erro ao excluir comprometimento: ${error.message}`,
+                severity: 'error'
+            });
+        }
+    };
+
+    const filteredCommitments = commitments.filter(commitment => {
+        const matchesSearch = commitment.member_name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = !statusFilter || commitment.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -207,15 +234,8 @@ const MemberCommitmentsPage = () => {
         page * rowsPerPage + rowsPerPage
     );
 
-    // Estatísticas
-    const totalCommitments = mockCommitments.length;
-    const fulfilledCommitments = mockCommitments.filter(c => c.status === 'fulfilled').length;
-    const pendingCommitments = mockCommitments.filter(c => c.status === 'pending').length;
-    const overdueCommitments = mockCommitments.filter(c => c.status === 'overdue').length;
-
     useEffect(() => {
-        // Simular carregamento
-        setTimeout(() => setLoading(false), 1000);
+        loadData();
     }, []);
 
     if (loading) {
@@ -249,7 +269,7 @@ const MemberCommitmentsPage = () => {
                                         Total
                                     </Typography>
                                     <Typography variant="h4">
-                                        {totalCommitments}
+                                        {stats.total_commitments}
                                     </Typography>
                                 </Box>
                                 <AssignmentIcon sx={{ fontSize: 40, color: 'primary.main' }} />
@@ -266,7 +286,7 @@ const MemberCommitmentsPage = () => {
                                         Cumpridos
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'success.main' }}>
-                                        {fulfilledCommitments}
+                                        {stats.fulfilled_commitments}
                                     </Typography>
                                 </Box>
                                 <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />
@@ -283,7 +303,7 @@ const MemberCommitmentsPage = () => {
                                         Pendentes
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'warning.main' }}>
-                                        {pendingCommitments}
+                                        {stats.pending_commitments}
                                     </Typography>
                                 </Box>
                                 <TrendingUpIcon sx={{ fontSize: 40, color: 'warning.main' }} />
@@ -300,7 +320,7 @@ const MemberCommitmentsPage = () => {
                                         Atrasados
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'error.main' }}>
-                                        {overdueCommitments}
+                                        {stats.overdue_commitments}
                                     </Typography>
                                 </Box>
                                 <WarningIcon sx={{ fontSize: 40, color: 'error.main' }} />
@@ -413,18 +433,11 @@ const MemberCommitmentsPage = () => {
                                             </Tooltip>
                                         </TableCell>
                                         <TableCell align="center">
-                                            <Tooltip title="Editar">
-                                                <IconButton 
-                                                    size="small" 
-                                                    color="primary"
-                                                >
-                                                    <EditIcon />
-                                                </IconButton>
-                                            </Tooltip>
                                             <Tooltip title="Excluir">
                                                 <IconButton 
                                                     size="small" 
                                                     color="error"
+                                                    onClick={() => handleDeleteCommitment(commitment.id)}
                                                 >
                                                     <DeleteIcon />
                                                 </IconButton>
@@ -466,37 +479,37 @@ const MemberCommitmentsPage = () => {
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         <Grid item xs={12}>
-                            <Autocomplete
-                                multiple
-                                options={mockMembers}
-                                getOptionLabel={(option) => option.family_name}
-                                value={mockMembers.filter(member => commitmentForm.memberIds.includes(member.id))}
-                                onChange={(event, newValue) => {
-                                    const selectedIds = newValue.map(member => member.id);
-                                    handleFormChange('memberIds', selectedIds);
-                                }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Membros"
-                                        placeholder="Digite para pesquisar e selecionar múltiplos membros..."
-                                    />
-                                )}
-                                renderTags={(value, getTagProps) =>
-                                    value.map((option, index) => (
-                                        <Chip
-                                            variant="outlined"
-                                            label={option.family_name}
-                                            {...getTagProps({ index })}
-                                            key={option.id}
-                                        />
-                                    ))
-                                }
-                                noOptionsText="Nenhum membro encontrado"
-                                clearText="Limpar todos"
-                                openText="Abrir"
-                                closeText="Fechar"
-                            />
+                                            <Autocomplete
+                                                multiple
+                                                options={members}
+                                                getOptionLabel={(option) => option.family_name}
+                                                value={members.filter(member => commitmentForm.memberIds.includes(member.id))}
+                                                onChange={(event, newValue) => {
+                                                    const selectedIds = newValue.map(member => member.id);
+                                                    handleFormChange('memberIds', selectedIds);
+                                                }}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        label="Membros"
+                                                        placeholder="Digite para pesquisar e selecionar múltiplos membros..."
+                                                    />
+                                                )}
+                                                renderTags={(value, getTagProps) =>
+                                                    value.map((option, index) => (
+                                                        <Chip
+                                                            variant="outlined"
+                                                            label={option.family_name}
+                                                            {...getTagProps({ index })}
+                                                            key={option.id}
+                                                        />
+                                                    ))
+                                                }
+                                                noOptionsText="Nenhum membro encontrado"
+                                                clearText="Limpar todos"
+                                                openText="Abrir"
+                                                closeText="Fechar"
+                                            />
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField

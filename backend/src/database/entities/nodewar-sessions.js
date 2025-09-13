@@ -2,17 +2,24 @@ import { sql } from '../connection.js';
 
 export const getAllNodewarSessions = async () => {
     const result = await sql`
-        SELECT *
-        FROM nodewar_sessions
+        SELECT 
+            ns.*,
+            CONCAT('Node War #', ns.id, ' - ', TO_CHAR(ns.schedule, 'DD/MM/YYYY')) as name
+        FROM nodewar_sessions ns
+        ORDER BY ns.schedule DESC
     `;
     return result.rows;
 };
 
 export const getActiveNodewarSession = async () => {
     const result = await sql`
-        SELECT *
-        FROM nodewar_sessions
-        WHERE is_active = true
+        SELECT 
+            ns.*,
+            CONCAT('Node War #', ns.id, ' - ', TO_CHAR(ns.schedule, 'DD/MM/YYYY')) as name
+        FROM nodewar_sessions ns
+        WHERE ns.is_active = true
+        ORDER BY ns.schedule DESC
+        LIMIT 1
     `;
     return result.rows[0];
 };

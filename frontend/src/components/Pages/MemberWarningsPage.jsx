@@ -1,4 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { getAllMembers } from '../../api/members.js';
+import { getAllNodewarSessions } from '../../api/nodewar-sessions.js';
+import {
+    createBulkWarnings,
+    deleteWarning,
+    getAllWarnings,
+    getWarningStats,
+    WARNING_TYPE_OPTIONS,
+    WARNING_SEVERITY_OPTIONS,
+    getWarningTypeColor,
+    getWarningTypeLabel,
+    getSeverityColor,
+    getSeverityLabel,
+    resolveWarning,
+    reactivateWarning,
+    updateWarning,
+    validateWarningData
+} from '../../api/member-warnings.js';
 import {
     Typography,
     Paper,
@@ -73,75 +91,100 @@ const MemberWarningsPage = () => {
         issuedById: ''
     });
 
-    // Mock data para demonstração
-    const mockMembers = [
-        { id: 1, family_name: 'DragonSlayer' },
-        { id: 2, family_name: 'ShadowMage' },
-        { id: 3, family_name: 'IronKnight' },
-        { id: 4, family_name: 'FireWizard' },
-        { id: 5, family_name: 'StormRanger' },
-        { id: 6, family_name: 'DarkPaladin' },
-        { id: 7, family_name: 'MysticArcher' },
-        { id: 8, family_name: 'BloodWarrior' }
-    ];
+    const [members, setMembers] = useState([]);
+    const [sessions, setSessions] = useState([]);
+    const [warnings, setWarnings] = useState([]);
+    const [stats, setStats] = useState({
+        total_warnings: 0,
+        active_warnings: 0,
+        resolved_warnings: 0,
+        high_severity_warnings: 0
+    });
 
-    const mockSessions = [
-        { id: 1, name: 'Node War #001', date: '2024-01-15' },
-        { id: 2, name: 'Node War #002', date: '2024-01-17' },
-        { id: 3, name: 'Node War #003', date: '2024-01-19' },
-        { id: 4, name: 'Node War #004', date: '2024-01-22' }
-    ];
-
-    const mockWarnings = [
-        {
-            id: 1,
-            member_id: 1,
-            member_name: 'DragonSlayer',
-            warning_type: 'absence',
-            severity: 'medium',
-            description: 'Ausência não justificada na Node War #001',
-            session_id: 1,
-            session_name: 'Node War #001',
-            issued_by: 'Admin',
-            issued_at: '2024-01-15 21:00:00',
-            is_active: true,
-            resolved_at: null,
-            resolved_by: null,
-            resolution_notes: null
-        },
-        {
-            id: 2,
-            member_id: 2,
-            member_name: 'ShadowMage',
-            warning_type: 'behavior',
-            severity: 'high',
-            description: 'Comportamento inadequado durante a guerra',
-            session_id: 1,
-            session_name: 'Node War #001',
-            issued_by: 'Admin',
-            issued_at: '2024-01-15 21:30:00',
-            is_active: false,
-            resolved_at: '2024-01-16 10:00:00',
-            resolved_by: 'Admin',
-            resolution_notes: 'Membro se desculpou e prometeu melhorar'
-        },
-        {
-            id: 3,
-            member_id: 3,
-            member_name: 'IronKnight',
-            warning_type: 'performance',
-            severity: 'low',
-            description: 'Performance abaixo do esperado',
-            session_id: 2,
-            session_name: 'Node War #002',
-            issued_by: 'Admin',
-            issued_at: '2024-01-17 21:15:00',
-            is_active: true,
-            resolved_at: null,
-            resolved_by: null,
-            resolution_notes: null
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [membersData, sessionsData, warningsData, statsData] = await Promise.all([
+                getAllMembers(),
+                getAllNodewarSessions(),
+                getAllWarnings(),
+                getWarningStats()
+            ]);
+            
+            setMembers(membersData);
+            setSessions(sessionsData);
+            setWarnings(warningsData);
+            setStats({
+                total_warnings: parseInt(statsData.total_warnings) || 0,
+                active_warnings: warningsData.filter(w => w.is_active).length,
+                resolved_warnings: warningsData.filter(w => !w.is_active).length,
+                high_severity_warnings: warningsData.filter(w => w.severity === 'high' && w.is_active).length
+            });
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setSnackbar({
+                open: true,
+                message: `Erro ao carregar dados: ${error.message}`,
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
+
+    const handleDeleteWarning = async (id) => {
+        try {
+            await deleteWarning(id);
+            setSnackbar({
+                open: true,
+                message: 'Advertência excluída com sucesso!',
+                severity: 'success'
+            });
+            await loadData();
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: `Erro ao excluir advertência: ${error.message}`,
+                severity: 'error'
+            });
+        }
+    };
+
+    const handleResolveWarning = async (id, resolutionNotes) => {
+        try {
+            await resolveWarning(id, { resolutionNotes });
+            setSnackbar({
+                open: true,
+                message: 'Advertência resolvida com sucesso!',
+                severity: 'success'
+            });
+            await loadData();
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: `Erro ao resolver advertência: ${error.message}`,
+                severity: 'error'
+            });
+        }
+    };
+
+    const handleReactivateWarning = async (id) => {
+        try {
+            await reactivateWarning(id);
+            setSnackbar({
+                open: true,
+                message: 'Advertência reativada com sucesso!',
+                severity: 'success'
+            });
+            await loadData();
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: `Erro ao reativar advertência: ${error.message}`,
+                severity: 'error'
+            });
+        }
+    };
 
     // Funções
     const handleOpenDialog = () => {
@@ -179,20 +222,33 @@ const MemberWarningsPage = () => {
         try {
             setFormLoading(true);
             
-            // Simular salvamento em lote
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const validation = validateWarningData(warningForm);
+            if (!validation.isValid) {
+                setSnackbar({
+                    open: true,
+                    message: `Erro de validação: ${validation.errors.join(', ')}`,
+                    severity: 'error'
+                });
+                return;
+            }
             
-            const selectedMemberNames = mockMembers
+            await createBulkWarnings(warningForm);
+            
+            const selectedMemberNames = members
                 .filter(member => warningForm.memberIds.includes(member.id))
                 .map(member => member.family_name)
                 .join(', ');
             
+            const typeLabel = getWarningTypeLabel(warningForm.warningType);
+            const severityLabel = getSeverityLabel(warningForm.severity);
+            
             setSnackbar({ 
                 open: true, 
-                message: `Advertência emitida para ${warningForm.memberIds.length} membros: ${selectedMemberNames} ⚠️`, 
+                message: `Advertência ${typeLabel} (${severityLabel}) emitida para ${warningForm.memberIds.length} membros: ${selectedMemberNames} ⚠️`, 
                 severity: 'success' 
             });
             
+            await loadData();
             handleCloseDialog();
         } catch (error) {
             setSnackbar({ 
@@ -256,14 +312,14 @@ const MemberWarningsPage = () => {
     };
 
     // Filtros
-    const filteredWarnings = mockWarnings.filter(warning => {
-        const matchesSearch = warning.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            warning.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredWarnings = warnings.filter(warning => {
+        const matchesSearch = warning.member_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             warning.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = !typeFilter || warning.warning_type === typeFilter;
         const matchesSeverity = !severityFilter || warning.severity === severityFilter;
         const matchesStatus = !statusFilter || 
-                            (statusFilter === 'active' && warning.is_active) ||
-                            (statusFilter === 'resolved' && !warning.is_active);
+                             (statusFilter === 'active' && warning.is_active) ||
+                             (statusFilter === 'resolved' && !warning.is_active);
         return matchesSearch && matchesType && matchesSeverity && matchesStatus;
     });
 
@@ -272,15 +328,8 @@ const MemberWarningsPage = () => {
         page * rowsPerPage + rowsPerPage
     );
 
-    // Estatísticas
-    const totalWarnings = mockWarnings.length;
-    const activeWarnings = mockWarnings.filter(w => w.is_active).length;
-    const resolvedWarnings = mockWarnings.filter(w => !w.is_active).length;
-    const highSeverityWarnings = mockWarnings.filter(w => w.severity === 'high' && w.is_active).length;
-
     useEffect(() => {
-        // Simular carregamento
-        setTimeout(() => setLoading(false), 1000);
+        loadData();
     }, []);
 
     if (loading) {
@@ -314,7 +363,7 @@ const MemberWarningsPage = () => {
                                         Total
                                     </Typography>
                                     <Typography variant="h4">
-                                        {totalWarnings}
+                                        {stats.total_warnings}
                                     </Typography>
                                 </Box>
                                 <WarningIcon sx={{ fontSize: 40, color: 'primary.main' }} />
@@ -331,7 +380,7 @@ const MemberWarningsPage = () => {
                                         Ativas
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'warning.main' }}>
-                                        {activeWarnings}
+                                        {stats.active_warnings}
                                     </Typography>
                                 </Box>
                                 <ErrorIcon sx={{ fontSize: 40, color: 'warning.main' }} />
@@ -348,7 +397,7 @@ const MemberWarningsPage = () => {
                                         Resolvidas
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'success.main' }}>
-                                        {resolvedWarnings}
+                                        {stats.resolved_warnings}
                                     </Typography>
                                 </Box>
                                 <ResolvedIcon sx={{ fontSize: 40, color: 'success.main' }} />
@@ -365,7 +414,7 @@ const MemberWarningsPage = () => {
                                         Alta Severidade
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: 'error.main' }}>
-                                        {highSeverityWarnings}
+                                        {stats.high_severity_warnings}
                                     </Typography>
                                 </Box>
                                 <ErrorIcon sx={{ fontSize: 40, color: 'error.main' }} />
@@ -399,10 +448,11 @@ const MemberWarningsPage = () => {
                                 label="Tipo"
                             >
                                 <MenuItem value="">Todos</MenuItem>
-                                <MenuItem value="absence">Ausência</MenuItem>
-                                <MenuItem value="behavior">Comportamento</MenuItem>
-                                <MenuItem value="performance">Performance</MenuItem>
-                                <MenuItem value="other">Outros</MenuItem>
+                                            {WARNING_TYPE_OPTIONS.map(option => (
+                                                <MenuItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
                             </Select>
                         </FormControl>
                     </Grid>
@@ -415,9 +465,11 @@ const MemberWarningsPage = () => {
                                 label="Severidade"
                             >
                                 <MenuItem value="">Todas</MenuItem>
-                                <MenuItem value="low">Baixa</MenuItem>
-                                <MenuItem value="medium">Média</MenuItem>
-                                <MenuItem value="high">Alta</MenuItem>
+                                            {WARNING_SEVERITY_OPTIONS.map(option => (
+                                                <MenuItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
                             </Select>
                         </FormControl>
                     </Grid>
@@ -500,9 +552,9 @@ const MemberWarningsPage = () => {
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell align="center">
-                                        {warning.session_id ? (
+                                        {warning.session_name ? (
                                             <Chip 
-                                                label={`#${warning.session_id}`} 
+                                                label={warning.session_name} 
                                                 size="small" 
                                                 variant="outlined"
                                                 color="primary"
@@ -515,7 +567,7 @@ const MemberWarningsPage = () => {
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2">
-                                            {warning.issued_by}
+                                            {warning.issued_by_name}
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
                                             {new Date(warning.issued_at).toLocaleDateString('pt-BR')}
@@ -591,9 +643,9 @@ const MemberWarningsPage = () => {
                         <Grid item xs={12}>
                             <Autocomplete
                                 multiple
-                                options={mockMembers}
+                                options={members}
                                 getOptionLabel={(option) => option.family_name}
-                                value={mockMembers.filter(member => warningForm.memberIds.includes(member.id))}
+                                value={members.filter(member => warningForm.memberIds.includes(member.id))}
                                 onChange={(event, newValue) => {
                                     const selectedIds = newValue.map(member => member.id);
                                     handleFormChange('memberIds', selectedIds);
@@ -629,10 +681,11 @@ const MemberWarningsPage = () => {
                                     onChange={(e) => handleFormChange('warningType', e.target.value)}
                                     label="Tipo de Advertência"
                                 >
-                                    <MenuItem value="absence">Ausência</MenuItem>
-                                    <MenuItem value="behavior">Comportamento</MenuItem>
-                                    <MenuItem value="performance">Performance</MenuItem>
-                                    <MenuItem value="other">Outros</MenuItem>
+                                            {WARNING_TYPE_OPTIONS.map(option => (
+                                                <MenuItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
                                 </Select>
                             </FormControl>
                         </Grid>
@@ -644,9 +697,11 @@ const MemberWarningsPage = () => {
                                     onChange={(e) => handleFormChange('severity', e.target.value)}
                                     label="Severidade"
                                 >
-                                    <MenuItem value="low">Baixa</MenuItem>
-                                    <MenuItem value="medium">Média</MenuItem>
-                                    <MenuItem value="high">Alta</MenuItem>
+                                            {WARNING_SEVERITY_OPTIONS.map(option => (
+                                                <MenuItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
                                 </Select>
                             </FormControl>
                         </Grid>
@@ -659,7 +714,7 @@ const MemberWarningsPage = () => {
                                     label="Sessão (Opcional)"
                                 >
                                     <MenuItem value="">Nenhuma</MenuItem>
-                                    {mockSessions.map(session => (
+                                    {sessions.map(session => (
                                         <MenuItem key={session.id} value={session.id}>{session.name}</MenuItem>
                                     ))}
                                 </Select>
@@ -667,9 +722,9 @@ const MemberWarningsPage = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <Autocomplete
-                                options={mockMembers}
+                                options={members}
                                 getOptionLabel={(option) => option.family_name}
-                                value={mockMembers.find(member => member.id === warningForm.issuedById) || null}
+                                value={members.find(member => member.id === warningForm.issuedById) || null}
                                 onChange={(event, newValue) => {
                                     handleFormChange('issuedById', newValue ? newValue.id : '');
                                 }}

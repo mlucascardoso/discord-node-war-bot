@@ -634,14 +634,21 @@ const MemberParticipationsPage = () => {
                                         </Typography>
                                     </TableCell>
                                     <TableCell align="center">
-                                        <Tooltip title={getStatusLabel(participation.participation_status)}>
-                                            <Badge
-                                                badgeContent={getStatusIcon(participation.participation_status)}
-                                                color={getStatusColor(participation.participation_status)}
-                                            >
-                                                <Box sx={{ width: 24, height: 24 }} />
-                                            </Badge>
-                                        </Tooltip>
+                                        {participation.participation_status === 'present' && (
+                                            <Tooltip title="Presente">
+                                                <CheckCircleIcon sx={{ fontSize: 24, color: 'success.main' }} />
+                                            </Tooltip>
+                                        )}
+                                        {participation.participation_status === 'late' && (
+                                            <Tooltip title="Atrasado">
+                                                <ScheduleIcon sx={{ fontSize: 24, color: 'warning.main' }} />
+                                            </Tooltip>
+                                        )}
+                                        {participation.participation_status === 'absent' && (
+                                            <Tooltip title="Ausente">
+                                                <CancelIcon sx={{ fontSize: 24, color: 'error.main' }} />
+                                            </Tooltip>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" color="text.secondary">

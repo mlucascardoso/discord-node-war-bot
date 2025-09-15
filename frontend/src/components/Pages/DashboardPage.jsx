@@ -36,23 +36,29 @@ import {
     Star as StarIcon
 } from '@mui/icons-material';
 import { getAllMembers, getMembersStats } from '../../api/members.js';
+import { getAllClasses } from '../../api/classes.js';
 
 const DashboardPage = () => {
     const [members, setMembers] = useState([]);
+    const [classes, setClasses] = useState([]);
     const [selectedMember, setSelectedMember] = useState('all');
     const [evolutionData, setEvolutionData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Carregar dados dos membros da API
+    // Carregar dados dos membros e classes da API
     useEffect(() => {
-        const fetchMembers = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
                 setError(null);
                 
-                const membersData = await getAllMembers();
+                const [membersData, classesData] = await Promise.all([
+                    getAllMembers(),
+                    getAllClasses()
+                ]);
                 setMembers(membersData);
+                setClasses(classesData);
 
                 // Mock data para evolução (dados históricos simulados baseados nos membros reais)
                 const mockEvolution = [
@@ -64,14 +70,14 @@ const DashboardPage = () => {
                 ];
                 setEvolutionData(mockEvolution);
             } catch (err) {
-                console.error('Error fetching members:', err);
-                setError('Erro ao carregar dados dos membros');
+                console.error('Error fetching data:', err);
+                setError('Erro ao carregar dados');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchMembers();
+        fetchData();
     }, []);
 
     // Calcular estatísticas
@@ -93,9 +99,10 @@ const DashboardPage = () => {
     // Cores para os gráficos
     const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
-    // Dados para gráfico de pizza (distribuição por classe) - usando class_id temporariamente
+    // Dados para gráfico de pizza (distribuição por classe)
     const classDistribution = members.reduce((acc, member) => {
-        const className = `Classe ${member.class_id || 'N/A'}`;
+        const classObj = classes.find(c => c.id === member.class_id);
+        const className = classObj ? classObj.name : 'Classe Desconhecida';
         acc[className] = (acc[className] || 0) + 1;
         return acc;
     }, {});
@@ -191,7 +198,7 @@ const DashboardPage = () => {
                             <StarIcon sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" component="div">
-                                    {topPlayer?.familyName}
+                                    {topPlayer?.family_name}
                                 </Typography>
                                 <Typography variant="body2">
                                     Top Player

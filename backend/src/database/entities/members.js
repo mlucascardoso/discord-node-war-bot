@@ -45,7 +45,8 @@ export const updateMember = async (id, memberData) => {
             level = ${memberData.level},
             ap = ${memberData.ap},
             awakened_ap = ${memberData.awakenedAp},
-            dp = ${memberData.dp}
+            dp = ${memberData.dp},
+            gearscore = ${memberData.gearscore}
         WHERE id = ${id} RETURNING *`;
     return result.rows[0];
 };

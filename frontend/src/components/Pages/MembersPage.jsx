@@ -57,6 +57,18 @@ import { getAllGuilds } from '../../api/guilds.js';
 import { getAllClasses } from '../../api/classes.js';
 import { getAllClassProfiles } from '../../api/class-profiles.js';
 
+// Função para formatar data
+const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+};
+
 // Componente para exibir roles do membro
 const MemberRolesDisplay = ({ memberId, fetchMemberRoles, refreshKey }) => {
     const [memberRoles, setMemberRoles] = useState([]);
@@ -487,6 +499,7 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                                 <TableCell align="center">GS</TableCell>
                                 <TableCell align="center">Perfil</TableCell>
                                 <TableCell align="center">Roles</TableCell>
+                                <TableCell align="center">Data de Criação</TableCell>
                                 <TableCell align="center">Ações</TableCell>
                             </TableRow>
                         </TableHead>
@@ -553,6 +566,11 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                                                 fetchMemberRoles={fetchMemberRoles}
                                                 refreshKey={rolesRefreshKey}
                                             />
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <Typography variant="body2" color="text.secondary">
+                                                {formatDate(member.created_at)}
+                                            </Typography>
                                         </TableCell>
                                         <TableCell align="center">
                                             <IconButton 

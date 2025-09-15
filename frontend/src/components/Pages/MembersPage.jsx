@@ -748,16 +748,9 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                         <Grid item xs={12}>
                             <Autocomplete
                                 multiple
-                                options={roles.filter(role => 
-                                    role.name.toLowerCase() !== 'waitlist' && 
-                                    role.name.toLowerCase() !== 'frontline'
-                                )}
+                                options={roles}
                                 getOptionLabel={(option) => `${option.emoji} ${option.name}`}
-                                value={roles.filter(role => 
-                                    memberForm.roleIds?.includes(role.id) &&
-                                    role.name.toLowerCase() !== 'waitlist' && 
-                                    role.name.toLowerCase() !== 'frontline'
-                                ) || []}
+                                value={roles.filter(role => memberForm.roleIds?.includes(role.id)) || []}
                                 onChange={(event, newValue) => {
                                     const selectedIds = newValue.map(role => role.id);
                                     handleFormChange('roleIds', selectedIds);

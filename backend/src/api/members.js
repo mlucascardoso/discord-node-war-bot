@@ -1,5 +1,4 @@
 import { createCommitment as dbCreateCommitment } from '../database/entities/member-commitments.js';
-import { addMemberRole, getRoleByName } from './roles.js';
 import {
     createMember as dbCreateMember,
     deleteMember as dbDeleteMember,
@@ -32,27 +31,15 @@ export const createMember = async (memberData) => {
     const member = await dbCreateMember(memberData);
 
     try {
-        // 1. Criar comprometimento padrão de 3 dias
+        // Criar comprometimento padrão de 3 dias
         await dbCreateCommitment({
             memberId: member.id,
             committedParticipations: 3,
             notes: 'Comprometimento padrão criado automaticamente'
         });
-
-        // 2. Buscar e atribuir roles padrão (waitlist e frontline)
-        const waitlistRole = await getRoleByName('waitlist');
-        const frontlineRole = await getRoleByName('frontline');
-
-        if (waitlistRole) {
-            await addMemberRole(member.id, waitlistRole.id);
-        }
-
-        if (frontlineRole) {
-            await addMemberRole(member.id, frontlineRole.id);
-        }
     } catch (error) {
-        console.warn('Erro ao criar configurações padrão para o membro:', error);
-        // Não falhamos a criação do membro se houver erro nas configurações padrão
+        console.warn('Erro ao criar comprometimento padrão para o membro:', error);
+        // Não falhamos a criação do membro se houver erro no comprometimento
     }
 
     return { success: true, data: member };

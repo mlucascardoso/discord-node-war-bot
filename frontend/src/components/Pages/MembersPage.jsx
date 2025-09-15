@@ -156,6 +156,7 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
     const [editingMember, setEditingMember] = useState(null);
     const [loading, setLoading] = useState(true);
     const [formLoading, setFormLoading] = useState(false);
+    const [deletingMemberId, setDeletingMemberId] = useState(null);
     const [error, setError] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [memberForm, setMemberForm] = useState({
@@ -368,7 +369,12 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
     };
 
     const handleDeleteMember = async (memberId) => {
+        if (!window.confirm('Tem certeza que deseja excluir este membro? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+
         try {
+            setDeletingMemberId(memberId);
             await deleteMember(memberId);
             setMembers(prev => prev.filter(member => member.id !== memberId));
             setSnackbar({ 
@@ -383,6 +389,8 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                 message: `Erro ao excluir membro: ${error.message}`, 
                 severity: 'error' 
             });
+        } finally {
+            setDeletingMemberId(null);
         }
     };
 
@@ -584,8 +592,13 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                                                 size="small" 
                                                 onClick={() => handleDeleteMember(member.id)}
                                                 color="error"
+                                                disabled={deletingMemberId === member.id}
                                             >
-                                                <DeleteIcon />
+                                                {deletingMemberId === member.id ? (
+                                                    <CircularProgress size={20} color="inherit" />
+                                                ) : (
+                                                    <DeleteIcon />
+                                                )}
                                             </IconButton>
                                         </TableCell>
                                     </TableRow>
@@ -735,9 +748,16 @@ const MembersPage = ({ fetchRoles, fetchMemberRoles, updateMemberRoles, setMessa
                         <Grid item xs={12}>
                             <Autocomplete
                                 multiple
-                                options={roles}
+                                options={roles.filter(role => 
+                                    role.name.toLowerCase() !== 'waitlist' && 
+                                    role.name.toLowerCase() !== 'frontline'
+                                )}
                                 getOptionLabel={(option) => `${option.emoji} ${option.name}`}
-                                value={roles.filter(role => memberForm.roleIds?.includes(role.id)) || []}
+                                value={roles.filter(role => 
+                                    memberForm.roleIds?.includes(role.id) &&
+                                    role.name.toLowerCase() !== 'waitlist' && 
+                                    role.name.toLowerCase() !== 'frontline'
+                                ) || []}
                                 onChange={(event, newValue) => {
                                     const selectedIds = newValue.map(role => role.id);
                                     handleFormChange('roleIds', selectedIds);

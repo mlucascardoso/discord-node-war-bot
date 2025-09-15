@@ -50,3 +50,15 @@ export const updateMember = async (id, memberData) => {
         WHERE id = ${id} RETURNING *`;
     return result.rows[0];
 };
+
+export const deleteMember = async (id) => {
+    // Delete em cascata: primeiro remove todas as referências do membro
+    await sql`DELETE FROM member_roles WHERE member_id = ${id}`;
+    await sql`DELETE FROM member_commitments WHERE member_id = ${id}`;
+    await sql`DELETE FROM member_warnings WHERE member_id = ${id}`;
+    await sql`DELETE FROM member_participations WHERE member_id = ${id}`;
+
+    // Por último, deleta o membro
+    const result = await sql`DELETE FROM members WHERE id = ${id} RETURNING *`;
+    return result.rows[0];
+};

@@ -4,7 +4,7 @@ import {
     removeMemberRole as dbRemoveMemberRole,
     updateMemberRoles as dbUpdateMemberRoles
 } from '../database/entities/member-roles.js';
-import { getAllRoles as dbGetAllRoles, getRoleById as dbGetRoleById } from '../database/entities/roles.js';
+import { getAllRoles as dbGetAllRoles, getRoleById as dbGetRoleById, getRoleByName as dbGetRoleByName } from '../database/entities/roles.js';
 
 // ==================== ROLES ====================
 
@@ -14,6 +14,10 @@ export const getAllRoles = async () => {
 
 export const getRoleById = async (id) => {
     return dbGetRoleById(id);
+};
+
+export const getRoleByName = async (name) => {
+    return dbGetRoleByName(name);
 };
 
 // ==================== MEMBER ROLES ====================

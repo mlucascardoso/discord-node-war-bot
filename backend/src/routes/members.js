@@ -1,5 +1,5 @@
 import express from 'express';
-import { createMember, getAllMembers, getMemberById, updateMember } from '../api/members.js';
+import { createMember, deleteMember, getAllMembers, getMemberById, updateMember } from '../api/members.js';
 
 const router = express.Router();
 
@@ -49,6 +49,20 @@ router.put('/:id', async (req, res) => {
     } catch (error) {
         console.log(error);
 
+        return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await deleteMember(parseInt(id));
+        if (result.success) {
+            return res.json({ success: true, data: result.data });
+        } else {
+            return res.status(404).json({ success: false, error: result.error });
+        }
+    } catch (error) {
         return res.status(500).json({ success: false, error: 'Internal server error', details: error.message, stack: error.stack });
     }
 });

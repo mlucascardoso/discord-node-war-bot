@@ -91,10 +91,17 @@ const DashboardPage = () => {
     const topPlayer = members.find(m => m.gearscore === highestGearscore);
 
     // Dados para gráfico de barras (média geral)
-    const gearscoreData = members.map(member => ({
-        name: member.family_name,
-        gearscore: member.gearscore
-    }));
+    const gearscoreData = members.map(member => {
+        const classObj = classes.find(c => c.id === member.class_id);
+        return {
+            name: member.family_name,
+            gearscore: member.gearscore,
+            className: classObj ? classObj.name : 'Classe Desconhecida',
+            ap: member.ap,
+            awakenedAp: member.awakened_ap,
+            dp: member.dp
+        };
+    });
 
     // Cores para os gráficos
     const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
@@ -227,9 +234,15 @@ const DashboardPage = () => {
                                 <Tooltip 
                                     formatter={(value, name, props) => [
                                         `${value} GS`,
-                                        `${props.payload.character} (${props.payload.class})`
+                                        `${props.payload.name} (${props.payload.className})`
                                     ]}
-                                    labelFormatter={(label) => `Família: ${label}`}
+                                    labelFormatter={(label, payload) => {
+                                        if (payload && payload.length > 0) {
+                                            const data = payload[0].payload;
+                                            return `AP: ${data.ap} | AP Despertar: ${data.awakenedAp} | DP: ${data.dp}`;
+                                        }
+                                        return `Detalhes`;
+                                    }}
                                 />
                                 <Bar dataKey="gearscore" fill="#8884d8" radius={[4, 4, 0, 0]} />
                             </BarChart>
